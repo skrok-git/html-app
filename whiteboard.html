@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Whiteboard</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f5f5f4;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Header */
+  #header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    height: 44px;
+    background: #fff;
+    border-bottom: 1px solid #e8e8e6;
+    flex-shrink: 0;
+  }
+  #title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #2C2C2B;
+    letter-spacing: -0.01em;
+  }
+  #save-status {
+    font-size: 12px;
+    color: #9e9b96;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  #save-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #46A171;
+  }
+
+  /* Toolbar */
+  #toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 0 16px;
+    height: 52px;
+    background: #fff;
+    border-bottom: 1px solid #e8e8e6;
+    flex-shrink: 0;
+  }
+
+  .color-group { display: flex; align-items: center; gap: 8px; }
+  .c-swatch {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2.5px solid transparent;
+    transition: transform 0.1s, border-color 0.1s;
+    flex-shrink: 0;
+  }
+  .c-swatch:hover { transform: scale(1.15); }
+  .c-swatch.active { border-color: #2783DE; }
+
+  .divider { width: 1px; height: 28px; background: #e8e8e6; margin: 0 14px; flex-shrink: 0; }
+
+  .size-group { display: flex; align-items: center; gap: 10px; }
+  .s-dot {
+    border-radius: 50%;
+    background: #2C2C2B;
+    cursor: pointer;
+    opacity: 0.35;
+    transition: opacity 0.1s, transform 0.1s;
+    flex-shrink: 0;
+  }
+  .s-dot:hover { opacity: 0.6; }
+  .s-dot.active { opacity: 1; }
+
+  .action-group { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+  .act-btn {
+    height: 32px;
+    padding: 0 14px;
+    border-radius: 8px;
+    border: 1px solid #e8e8e6;
+    background: #fff;
+    font-size: 13px;
+    font-weight: 500;
+    color: #2C2C2B;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
+    white-space: nowrap;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+  }
+  .act-btn:hover { background: #f0efed; }
+  .act-btn.active { background: #2C2C2B; color: #fff; border-color: #2C2C2B; }
+
+  #canvas-wrap {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: #fff;
+  }
+  #canvas {
+    display: block;
+    cursor: crosshair;
+    touch-action: none;
+  }
+  #canvas.eraser-cursor { cursor: cell; }
+
+  #textInput {
+    position: absolute;
+    display: none;
+    border: 1.5px dashed #2783DE;
+    background: transparent;
+    outline: none;
+    padding: 2px 4px;
+    font-family: inherit;
+    resize: none;
+    overflow: hidden;
+    z-index: 5;
+    min-width: 120px;
+    border-radius: 4px;
+  }
+
+  /* Modal / Overlay (sandbox-safe) */
+  .overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    padding: 24px;
+  }
+  .overlay.show { display: flex; }
+  .modal {
+    background: #fff;
+    border-radius: 12px;
+    padding: 22px 22px 18px;
+    max-width: 90vw;
+    max-height: 90vh;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .modal-msg { font-size: 14px; color: #2C2C2B; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
+  .modal img {
+    max-width: 100%;
+    max-height: 70vh;
+    border: 1px solid #e8e8e6;
+    border-radius: 6px;
+    object-fit: contain;
+  }
+  .modal .hint { font-size: 12px; color: #9e9b96; }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <span id="title">Whiteboard</span>
+  <span id="save-status"><span id="save-dot"></span><span id="save-label">Saved &middot; 0 strokes</span></span>
+</div>
+
+<div id="toolbar">
+  <div class="color-group">
+    <div class="c-swatch active" style="background:#2C2C2B" data-color="#2C2C2B"></div>
+    <div class="c-swatch" style="background:#2783DE" data-color="#2783DE"></div>
+    <div class="c-swatch" style="background:#46A171" data-color="#46A171"></div>
+    <div class="c-swatch" style="background:#E56458" data-color="#E56458"></div>
+    <div class="c-swatch" style="background:#D5803B" data-color="#D5803B"></div>
+    <div class="c-swatch" style="background:#8B6FD4" data-color="#8B6FD4"></div>
+    <input type="color" id="customColor" value="#2C2C2B" title="カスタムカラー"
+      style="width:26px;height:26px;border-radius:50%;border:2px solid #e8e8e6;padding:0;cursor:pointer;background:none;">
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="size-group">
+    <div class="s-dot" style="width:8px;height:8px" data-size="2"></div>
+    <div class="s-dot active" style="width:13px;height:13px" data-size="5"></div>
+    <div class="s-dot" style="width:20px;height:20px" data-size="12"></div>
+  </div>
+
+  <div class="action-group">
+    <button class="act-btn" id="btn-eraser" onclick="toggleEraser()">Eraser</button>
+    <button class="act-btn" onclick="undo()">Undo</button>
+    <button class="act-btn" onclick="clearAll()">Clear</button>
+    <button class="act-btn" onclick="importJson()">読込</button>
+    <button class="act-btn" onclick="exportJson()">JSON</button>
+    <button class="act-btn" onclick="exportPng()">PNG</button>
+  </div>
+</div>
+
+<div id="canvas-wrap">
+  <canvas id="canvas"></canvas>
+  <textarea id="textInput" rows="1"></textarea>
+</div>
+
+<div class="overlay" id="confirmOverlay">
+  <div class="modal">
+    <div class="modal-msg" id="confirmMsg">ボードをクリアしますか？</div>
+    <div class="modal-actions">
+      <button class="act-btn" id="confirmNo">キャンセル</button>
+      <button class="act-btn active" id="confirmYes">OK</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="exportOverlay">
+  <div class="modal">
+    <div class="modal-msg">画像を書き出しました</div>
+    <img id="exportImg" alt="export preview">
+    <div class="hint">画像を右クリック（スマホは長押し）→「画像を保存」で保存できます。</div>
+    <div class="modal-actions">
+      <a class="act-btn" id="exportOpen" target="_blank" rel="noopener">新規タブで開く</a>
+      <button class="act-btn active" id="exportClose">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="jsonOverlay">
+  <div class="modal">
+    <div class="modal-msg">JSONを書き出しました</div>
+    <div class="hint">whiteboard-data.json のダウンロードが始まらない場合は「新規タブで開く」からページを保存してください。読み込みは「読込」ボタンか、キャンバスへのドラッグ＆ドロップで行えます。</div>
+    <div class="modal-actions">
+      <a class="act-btn" id="jsonOpen" target="_blank" rel="noopener">新規タブで開く</a>
+      <button class="act-btn active" id="jsonClose">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="jsonFile" accept=".json,application/json" style="display:none">
+
+<script>
+let color = '#2C2C2B';
+let penSize = 5;
+let eraserMode = false;
+let drawing = false;
+let startX = 0, startY = 0;
+let strokeCount = 0;
+let history = [];
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const wrap = document.getElementById('canvas-wrap');
+const saveLabel = document.getElementById('save-label');
+
+function resize() {
+  const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  canvas.width = wrap.clientWidth;
+  canvas.height = wrap.clientHeight;
+  ctx.putImageData(img, 0, 0);
+}
+window.addEventListener('resize', resize);
+resize();
+
+document.querySelectorAll('.c-swatch').forEach(s => {
+  s.addEventListener('click', () => {
+    color = s.dataset.color;
+    document.querySelectorAll('.c-swatch').forEach(x => x.classList.remove('active'));
+    s.classList.add('active');
+    eraserMode = false;
+    document.getElementById('btn-eraser').classList.remove('active');
+    canvas.classList.remove('eraser-cursor');
+  });
+});
+document.getElementById('customColor').addEventListener('input', e => {
+  color = e.target.value;
+  document.querySelectorAll('.c-swatch').forEach(x => x.classList.remove('active'));
+  eraserMode = false;
+  document.getElementById('btn-eraser').classList.remove('active');
+  canvas.classList.remove('eraser-cursor');
+});
+
+document.querySelectorAll('.s-dot').forEach(d => {
+  d.addEventListener('click', () => {
+    penSize = +d.dataset.size;
+    document.querySelectorAll('.s-dot').forEach(x => x.classList.remove('active'));
+    d.classList.add('active');
+  });
+});
+
+function toggleEraser() {
+  eraserMode = !eraserMode;
+  const btn = document.getElementById('btn-eraser');
+  btn.classList.toggle('active', eraserMode);
+  canvas.classList.toggle('eraser-cursor', eraserMode);
+}
+
+function saveHistory() {
+  if (history.length > 80) history.shift();
+  history.push(canvas.toDataURL());
+}
+function undo() {
+  if (!history.length) return;
+  const img = new Image();
+  img.onload = () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0);
+  };
+  img.src = history.pop();
+  if (strokeCount > 0) strokeCount--;
+  updateStatus();
+}
+
+function updateStatus() {
+  saveLabel.textContent = `Saved \u00b7 ${strokeCount} stroke${strokeCount !== 1 ? 's' : ''}`;
+}
+
+function getPos(e) {
+  const r = canvas.getBoundingClientRect();
+  const src = e.touches ? e.touches[0] : e;
+  return { x: src.clientX - r.left, y: src.clientY - r.top };
+}
+
+canvas.addEventListener('pointerdown', e => {
+  const p = getPos(e);
+  drawing = true;
+  saveHistory();
+  ctx.beginPath();
+  ctx.moveTo(p.x, p.y);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  if (eraserMode) {
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.lineWidth = penSize * 5;
+  } else {
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.strokeStyle = color;
+    ctx.lineWidth = penSize;
+  }
+});
+
+canvas.addEventListener('pointermove', e => {
+  if (!drawing) return;
+  const p = getPos(e);
+  ctx.lineTo(p.x, p.y);
+  ctx.stroke();
+});
+
+canvas.addEventListener('pointerup', () => {
+  if (!drawing) return;
+  drawing = false;
+  ctx.globalCompositeOperation = 'source-over';
+  strokeCount++;
+  updateStatus();
+});
+canvas.addEventListener('pointerleave', () => { drawing = false; ctx.globalCompositeOperation = 'source-over'; });
+
+// Custom confirm (sandbox-safe, replaces window.confirm)
+function customConfirm(message) {
+  return new Promise(resolve => {
+    const overlay = document.getElementById('confirmOverlay');
+    document.getElementById('confirmMsg').textContent = message;
+    const yes = document.getElementById('confirmYes');
+    const no  = document.getElementById('confirmNo');
+    const close = (result) => {
+      overlay.classList.remove('show');
+      yes.onclick = null; no.onclick = null;
+      resolve(result);
+    };
+    yes.onclick = () => close(true);
+    no.onclick  = () => close(false);
+    overlay.classList.add('show');
+  });
+}
+
+async function clearAll() {
+  if (strokeCount === 0 || await customConfirm('ボードをクリアしますか？')) {
+    saveHistory();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    strokeCount = 0;
+    updateStatus();
+  }
+}
+
+// Export (sandbox-safe: preview overlay + optional download)
+function exportPng() {
+  const tmp = document.createElement('canvas');
+  tmp.width = canvas.width; tmp.height = canvas.height;
+  const tc = tmp.getContext('2d');
+  tc.fillStyle = '#ffffff';
+  tc.fillRect(0, 0, tmp.width, tmp.height);
+  tc.drawImage(canvas, 0, 0);
+
+  const finish = (url) => {
+    try {
+      const a = document.createElement('a');
+      a.download = 'whiteboard.png';
+      a.href = url;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (_) {}
+    const overlay = document.getElementById('exportOverlay');
+    document.getElementById('exportImg').src = url;
+    document.getElementById('exportOpen').href = url;
+    document.getElementById('exportClose').onclick = () => overlay.classList.remove('show');
+    overlay.classList.add('show');
+  };
+
+  if (tmp.toBlob) {
+    tmp.toBlob(blob => finish(URL.createObjectURL(blob)), 'image/png');
+  } else {
+    finish(tmp.toDataURL('image/png'));
+  }
+}
+
+// Alert (cancel-less confirm, sandbox-safe)
+async function customAlert(message) {
+  const no = document.getElementById('confirmNo');
+  no.style.display = 'none';
+  await customConfirm(message);
+  no.style.display = '';
+}
+
+// JSON export / import
+function exportJson() {
+  const data = { app: 'whiteboard', version: 1, exportedAt: new Date().toISOString(), strokes: strokeCount, width: canvas.width, height: canvas.height, image: canvas.toDataURL('image/png') };
+  const url = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: 'application/json' }));
+  try {
+    const a = document.createElement('a');
+    a.download = 'whiteboard-data.json';
+    a.href = url;
+    document.body.appendChild(a); a.click(); a.remove();
+  } catch (_) {}
+  const overlay = document.getElementById('jsonOverlay');
+  document.getElementById('jsonOpen').href = url;
+  document.getElementById('jsonClose').onclick = () => overlay.classList.remove('show');
+  overlay.classList.add('show');
+}
+function importJson() { document.getElementById('jsonFile').click(); }
+async function applyJsonText(text) {
+  let data;
+  try { data = JSON.parse(text); } catch (_) { await customAlert('JSONの解析に失敗しました。ファイルを確認してください。'); return; }
+  if (!data || data.app !== 'whiteboard' || !data.image) { await customAlert('このファイルはホワイトボードのJSONではありません。'); return; }
+  if (!(await customConfirm('読み込んだ内容で現在のボードを置き換えますか？'))) return;
+  const img = new Image();
+  img.onload = () => {
+    saveHistory();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0);
+    strokeCount = +data.strokes || 0;
+    updateStatus();
+  };
+  img.src = data.image;
+}
+function readJsonFile(f) { if (!f) return; const r = new FileReader(); r.onload = () => applyJsonText(r.result); r.readAsText(f); }
+document.getElementById('jsonFile').addEventListener('change', e => { readJsonFile(e.target.files[0]); e.target.value = ''; });
+wrap.addEventListener('dragover', e => e.preventDefault());
+wrap.addEventListener('drop', e => { e.preventDefault(); const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (f && /\.json$/i.test(f.name)) readJsonFile(f); });
+</script>
+</body>
+</html>
