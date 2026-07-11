@@ -109,12 +109,18 @@
     overflow: hidden;
     background: #fff;
   }
-  #canvas {
+  #canvas, #textCanvas {
+    position: absolute;
+    top: 0; left: 0;
     display: block;
+  }
+  #canvas {
     cursor: crosshair;
     touch-action: none;
   }
   #canvas.eraser-cursor { cursor: cell; }
+  #canvas.text-cursor { cursor: text; }
+  #textCanvas { pointer-events: none; }
 
   #textInput {
     position: absolute;
@@ -124,6 +130,7 @@
     outline: none;
     padding: 2px 4px;
     font-family: inherit;
+    line-height: 1.3;
     resize: none;
     overflow: hidden;
     z-index: 5;
@@ -193,6 +200,7 @@
   </div>
 
   <div class="action-group">
+    <button class="act-btn" id="btn-text" onclick="toggleText()">Text</button>
     <button class="act-btn" id="btn-eraser" onclick="toggleEraser()">Eraser</button>
     <button class="act-btn" onclick="undo()">Undo</button>
     <button class="act-btn" onclick="clearAll()">Clear</button>
@@ -204,6 +212,7 @@
 
 <div id="canvas-wrap">
   <canvas id="canvas"></canvas>
+  <canvas id="textCanvas"></canvas>
   <textarea id="textInput" rows="1"></textarea>
 </div>
 
@@ -246,21 +255,34 @@
 let color = '#2C2C2B';
 let penSize = 5;
 let eraserMode = false;
+let textMode = false;
 let drawing = false;
 let startX = 0, startY = 0;
 let strokeCount = 0;
 let history = [];
 
+// Text objects: { x, y, text, color, size }
+let texts = [];
+let editingIndex = null;
+let pendingX = 0, pendingY = 0;
+
+const FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
+const textCanvas = document.getElementById('textCanvas');
+const tctx = textCanvas.getContext('2d');
 const wrap = document.getElementById('canvas-wrap');
 const saveLabel = document.getElementById('save-label');
+const textInput = document.getElementById('textInput');
 
 function resize() {
   const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
   canvas.width = wrap.clientWidth;
   canvas.height = wrap.clientHeight;
   ctx.putImageData(img, 0, 0);
+  textCanvas.width = wrap.clientWidth;
+  textCanvas.height = wrap.clientHeight;
+  renderTexts();
 }
 window.addEventListener('resize', resize);
 resize();
@@ -292,11 +314,120 @@ document.querySelectorAll('.s-dot').forEach(d => {
 });
 
 function toggleEraser() {
+  commitText();
   eraserMode = !eraserMode;
+  textMode = false;
+  document.getElementById('btn-text').classList.remove('active');
+  canvas.classList.remove('text-cursor');
   const btn = document.getElementById('btn-eraser');
   btn.classList.toggle('active', eraserMode);
   canvas.classList.toggle('eraser-cursor', eraserMode);
 }
+
+// ---- Text tool ----
+function toggleText() {
+  commitText();
+  textMode = !textMode;
+  eraserMode = false;
+  document.getElementById('btn-eraser').classList.remove('active');
+  canvas.classList.remove('eraser-cursor');
+  document.getElementById('btn-text').classList.toggle('active', textMode);
+  canvas.classList.toggle('text-cursor', textMode);
+}
+
+function fontSizeFromPen(size) {
+  return Math.max(14, size * 4); // 2→14px / 5→20px / 12→48px
+}
+
+function renderTexts() {
+  tctx.clearRect(0, 0, textCanvas.width, textCanvas.height);
+  tctx.textBaseline = 'top';
+  texts.forEach(t => {
+    if (t.hidden) return;
+    tctx.fillStyle = t.color;
+    tctx.font = t.size + 'px ' + FONT;
+    String(t.text).split('\n').forEach((line, i) => {
+      tctx.fillText(line, t.x, t.y + i * t.size * 1.3);
+    });
+  });
+}
+
+function hitTextIndex(x, y) {
+  tctx.textBaseline = 'top';
+  for (let i = texts.length - 1; i >= 0; i--) {
+    const t = texts[i];
+    tctx.font = t.size + 'px ' + FONT;
+    const lines = String(t.text).split('\n');
+    const w = Math.max(20, ...lines.map(l => tctx.measureText(l).width));
+    const h = lines.length * t.size * 1.3;
+    if (x >= t.x - 4 && x <= t.x + w + 4 && y >= t.y - 4 && y <= t.y + h + 4) return i;
+  }
+  return -1;
+}
+
+function autoGrow() {
+  textInput.style.height = 'auto';
+  textInput.style.height = (textInput.scrollHeight + 4) + 'px';
+  textInput.style.width = '0px';
+  textInput.style.width = Math.max(120, textInput.scrollWidth + 12) + 'px';
+}
+
+function startTextEdit(index, x, y) {
+  editingIndex = (index === undefined || index === null || index === -1) ? null : index;
+  if (editingIndex !== null) {
+    const t = texts[editingIndex];
+    pendingX = t.x; pendingY = t.y;
+    textInput.value = t.text;
+    textInput.style.fontSize = t.size + 'px';
+    textInput.style.color = t.color;
+    t.hidden = true;
+    renderTexts();
+  } else {
+    pendingX = x; pendingY = y;
+    textInput.value = '';
+    textInput.style.fontSize = fontSizeFromPen(penSize) + 'px'; // 現在のサイズ設定を利用
+    textInput.style.color = color;                              // 現在のカラー設定を利用
+  }
+  textInput.style.left = (pendingX - 6) + 'px';
+  textInput.style.top = (pendingY - 4) + 'px';
+  textInput.style.display = 'block';
+  autoGrow();
+  requestAnimationFrame(() => textInput.focus());
+}
+
+function commitText() {
+  if (textInput.style.display !== 'block') return;
+  const val = textInput.value.replace(/\s+$/, '');
+  if (editingIndex !== null) {
+    const t = texts[editingIndex];
+    delete t.hidden;
+    if (val.trim() === '') texts.splice(editingIndex, 1); // 空にして確定→削除
+    else t.text = val;
+  } else if (val.trim() !== '') {
+    texts.push({ x: pendingX, y: pendingY, text: val, color: textInput.style.color, size: parseFloat(textInput.style.fontSize) });
+  }
+  editingIndex = null;
+  textInput.style.display = 'none';
+  textInput.value = '';
+  renderTexts();
+  updateStatus();
+}
+
+function cancelText() {
+  if (editingIndex !== null) delete texts[editingIndex].hidden;
+  editingIndex = null;
+  textInput.style.display = 'none';
+  textInput.value = '';
+  renderTexts();
+}
+
+textInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); commitText(); }
+  else if (e.key === 'Escape') { e.preventDefault(); cancelText(); }
+});
+textInput.addEventListener('input', autoGrow);
+textInput.addEventListener('blur', () => setTimeout(commitText, 0));
+// ---- /Text tool ----
 
 function saveHistory() {
   if (history.length > 80) history.shift();
@@ -315,7 +446,9 @@ function undo() {
 }
 
 function updateStatus() {
-  saveLabel.textContent = `Saved \u00b7 ${strokeCount} stroke${strokeCount !== 1 ? 's' : ''}`;
+  let label = `Saved \u00b7 ${strokeCount} stroke${strokeCount !== 1 ? 's' : ''}`;
+  if (texts.length) label += ` \u00b7 ${texts.length} text${texts.length !== 1 ? 's' : ''}`;
+  saveLabel.textContent = label;
 }
 
 function getPos(e) {
@@ -325,6 +458,14 @@ function getPos(e) {
 }
 
 canvas.addEventListener('pointerdown', e => {
+  // 入力中にキャンバスをクリック → まず確定
+  if (textInput.style.display === 'block') { commitText(); return; }
+  if (textMode) {
+    const p = getPos(e);
+    const i = hitTextIndex(p.x, p.y);
+    startTextEdit(i, p.x, p.y); // 既存テキスト上なら編集、それ以外は新規
+    return;
+  }
   const p = getPos(e);
   drawing = true;
   saveHistory();
@@ -358,6 +499,14 @@ canvas.addEventListener('pointerup', () => {
 });
 canvas.addEventListener('pointerleave', () => { drawing = false; ctx.globalCompositeOperation = 'source-over'; });
 
+// ペン/消しゴムモード中でも、既存テキストをダブルクリックで編集
+canvas.addEventListener('dblclick', e => {
+  if (textMode) return;
+  const p = getPos(e);
+  const i = hitTextIndex(p.x, p.y);
+  if (i !== -1) startTextEdit(i);
+});
+
 // Custom confirm (sandbox-safe, replaces window.confirm)
 function customConfirm(message) {
   return new Promise(resolve => {
@@ -377,9 +526,11 @@ function customConfirm(message) {
 }
 
 async function clearAll() {
-  if (strokeCount === 0 || await customConfirm('ボードをクリアしますか？')) {
+  if ((strokeCount === 0 && texts.length === 0) || await customConfirm('ボードをクリアしますか？')) {
     saveHistory();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    texts = [];
+    renderTexts();
     strokeCount = 0;
     updateStatus();
   }
@@ -387,12 +538,14 @@ async function clearAll() {
 
 // Export (sandbox-safe: preview overlay + optional download)
 function exportPng() {
+  commitText();
   const tmp = document.createElement('canvas');
   tmp.width = canvas.width; tmp.height = canvas.height;
   const tc = tmp.getContext('2d');
   tc.fillStyle = '#ffffff';
   tc.fillRect(0, 0, tmp.width, tmp.height);
   tc.drawImage(canvas, 0, 0);
+  tc.drawImage(textCanvas, 0, 0);
 
   const finish = (url) => {
     try {
@@ -427,7 +580,8 @@ async function customAlert(message) {
 
 // JSON export / import
 function exportJson() {
-  const data = { app: 'whiteboard', version: 1, exportedAt: new Date().toISOString(), strokes: strokeCount, width: canvas.width, height: canvas.height, image: canvas.toDataURL('image/png') };
+  commitText();
+  const data = { app: 'whiteboard', version: 2, exportedAt: new Date().toISOString(), strokes: strokeCount, width: canvas.width, height: canvas.height, image: canvas.toDataURL('image/png'), texts: texts.map(t => ({ x: t.x, y: t.y, text: t.text, color: t.color, size: t.size })) };
   const url = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: 'application/json' }));
   try {
     const a = document.createElement('a');
@@ -452,6 +606,8 @@ async function applyJsonText(text) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(img, 0, 0);
     strokeCount = +data.strokes || 0;
+    texts = Array.isArray(data.texts) ? data.texts : [];
+    renderTexts();
     updateStatus();
   };
   img.src = data.image;
