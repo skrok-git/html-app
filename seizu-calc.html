@@ -85,6 +85,7 @@
   }
   input:focus, select:focus { outline: 2px solid var(--blue); outline-offset: -1px; border-color: var(--blue); }
   input:disabled { background: var(--surface-2); color: var(--text-2); opacity: 0.6; }
+  input::placeholder { color: var(--text-2); opacity: 0.35; }
   .dist-box {
     background: var(--blue-soft); border: 1px solid var(--border);
     border-radius: 8px; padding: 10px 12px; min-height: 44px;
@@ -127,6 +128,15 @@
   }
   .grayed { opacity: 0.45; }
 
+  .btn-png {
+    appearance: none; font: inherit; font-size: 14px; font-weight: 600;
+    color: var(--blue); background: var(--blue-soft);
+    border: 1px solid var(--blue); border-radius: 8px;
+    padding: 6px 14px; cursor: pointer;
+    margin-left: auto; align-self: center;
+  }
+  .btn-png:active { opacity: 0.7; }
+
   @media (max-width: 480px) {
     .wrap { padding: 16px 16px 40px; }
     .grid, .grid3 { grid-template-columns: 1fr; }
@@ -144,6 +154,7 @@
   <div class="tabs" role="tablist">
     <button class="tab" id="tab-koma" role="tab" aria-selected="true" aria-controls="panel-koma">コマ出し</button>
     <button class="tab" id="tab-shasen" role="tab" aria-selected="false" aria-controls="panel-shasen">道路斜線</button>
+    <button class="btn-png" id="btn-png" type="button">PNG保存</button>
   </div>
 
   <!-- ================= コマ出し ================= -->
@@ -633,9 +644,147 @@
     document.getElementById(id).addEventListener(ev, calcShasen);
   });
 
+  /* ---------- PNG書き出し（表示中のタブの入力・出力を画像化） ---------- */
+  function pngVal(id, unit) {
+    var v = document.getElementById(id).value;
+    return v === "" ? "–" : v + (unit || "");
+  }
+  function pngSel(id) {
+    var el = document.getElementById(id);
+    return el.options[el.selectedIndex].text;
+  }
+  function pngTxt(id) { return document.getElementById(id).textContent; }
+  function pngMark(id) {
+    var b = document.querySelector("#" + id + " .badge");
+    if (!b) return null;
+    return b.classList.contains("ok") ? "ok" : "ng";
+  }
+
+  function buildKomaLines() {
+    var spec = document.getElementById("k-mode-spec").checked;
+    var L = [];
+    L.push({ t: "sec", text: "入力" });
+    L.push({ t: "kv", k: "課題名", v: document.getElementById("k-title").value || "–" });
+    L.push({ t: "kv", k: "用途地域区分", v: pngSel("k-zone") });
+    L.push({ t: "kv", k: "敷地面積", v: pngVal("k-site", " ㎡") });
+    L.push({ t: "kv", k: "建ぺい率", v: pngVal("k-bcr", " ％") });
+    L.push({ t: "kv", k: "前面道路幅員", v: pngVal("k-fr", " m") });
+    L.push({ t: "kv", k: "指定容積率", v: pngVal("k-cr", " ％") });
+    L.push({ t: "kv", k: "道路容積率（自動）", v: pngVal("k-rr", " ％") });
+    L.push({ t: "kv", k: "建築可能面積（自動）", v: pngVal("k-ba", " ㎡") });
+    L.push({ t: "kv", k: "床面積の指定方法", v: spec ? "面積指定" : "容積率による床面積" });
+    L.push({ t: "kv", k: "床面積 下限／上限", v: pngVal("k-low", " ㎡") + " ／ " + pngVal("k-high", " ㎡") });
+    L.push({ t: "kv", k: "容積率による床面積上限（自動）", v: pngVal("k-vol-high", " ㎡") });
+    L.push({ t: "sec", text: "結果①：建築可能面積のコマ出し" });
+    [["6m × 7m（42㎡）", "k-ba-42"], ["7m × 7m（49㎡）", "k-ba-49"], ["7m × 8m（56㎡）", "k-ba-56"]].forEach(function (r) {
+      L.push({ t: "kv", k: r[0], v: pngTxt(r[1]) });
+    });
+    L.push({ t: "sec", text: "結果②：床面積のコマ出し" + (spec ? "" : "（未使用）") });
+    [["6m × 7m（42㎡）", "k-out-42"], ["7m × 7m（49㎡）", "k-out-49"], ["7m × 8m（56㎡）", "k-out-56"]].forEach(function (r) {
+      L.push({ t: "kv", k: r[0], v: pngTxt(r[1]) });
+    });
+    L.push({ t: "sec", text: "結果③：容積率による床面積のコマ出し" + (spec ? "（未使用）" : "") });
+    [["6m × 7m（42㎡）", "k-vol-42"], ["7m × 7m（49㎡）", "k-vol-49"], ["7m × 8m（56㎡）", "k-vol-56"]].forEach(function (r) {
+      L.push({ t: "kv", k: r[0], v: pngTxt(r[1]) });
+    });
+    return L;
+  }
+
+  function buildShasenLines() {
+    var L = [];
+    L.push({ t: "sec", text: "入力" });
+    L.push({ t: "kv", k: "課題名", v: document.getElementById("s-title").value || "–" });
+    L.push({ t: "kv", k: "用途地域区分", v: pngSel("s-zone") });
+    L.push({ t: "kv", k: "柱サイズ", v: pngSel("s-col") + " m" });
+    L.push({ t: "kv", k: "前面道路幅員", v: pngVal("s-fr", " m") });
+    L.push({ t: "kv", k: "指定容積率", v: pngVal("s-cr", " ％") });
+    L.push({ t: "kv", k: "道路容積率（自動）", v: pngVal("s-rr", " ％") });
+    L.push({ t: "kv", k: "道路斜線適用距離", v: pngTxt("s-dist") });
+    L.push({ t: "kv", k: "道路幅員A／B／C", v: pngVal("s-ra", " m") + " ／ " + pngVal("s-rb", " m") + " ／ " + pngVal("s-rc", " m") });
+    L.push({ t: "kv", k: "高さA／B／C", v: pngVal("s-ha", " m") + " ／ " + pngVal("s-hb", " m") + " ／ " + pngVal("s-hc", " m") });
+    ["a", "b", "c"].forEach(function (rk) {
+      L.push({ t: "sec", text: "道路" + rk.toUpperCase() + " " + pngTxt("s-road-info-" + rk) + "　" + pngTxt("s-grad") });
+      ["a", "b", "c"].forEach(function (hk) {
+        L.push({
+          t: "kv",
+          k: pngTxt("s-hl-" + rk + hk),
+          v: pngTxt("s-res-" + rk + hk) + "　→　必要セットバック " + pngTxt("s-set-" + rk + hk),
+          mark: pngMark("s-set-" + rk + hk)
+        });
+      });
+    });
+    return L;
+  }
+
+  function exportPng() {
+    var koma = document.getElementById("panel-koma").classList.contains("active");
+    var tabName = koma ? "コマ出し" : "道路斜線";
+    var lines = koma ? buildKomaLines() : buildShasenLines();
+    var W = 680, pad = 28, lhKv = 26, lhSec = 42;
+    var H = pad + 40;
+    lines.forEach(function (l) { H += l.t === "sec" ? lhSec : lhKv; });
+    H += pad;
+    var scale = 2;
+    var cv = document.createElement("canvas");
+    cv.width = W * scale;
+    cv.height = H * scale;
+    var ctx = cv.getContext("2d");
+    ctx.scale(scale, scale);
+    var F = '-apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif';
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(0, 0, W, H);
+    var now = new Date();
+    function z(n) { return (n < 10 ? "0" : "") + n; }
+    var y = pad + 18;
+    ctx.fillStyle = "#2C2C2B";
+    ctx.font = "bold 20px " + F;
+    ctx.fillText("一級建築士製図電卓：" + tabName, pad, y);
+    y += 22;
+    ctx.fillStyle = "#7D7A75";
+    ctx.font = "12px " + F;
+    ctx.fillText("書き出し日時 " + now.getFullYear() + "-" + z(now.getMonth() + 1) + "-" + z(now.getDate()) + " " + z(now.getHours()) + ":" + z(now.getMinutes()), pad, y);
+    lines.forEach(function (l) {
+      if (l.t === "sec") {
+        y += lhSec;
+        ctx.fillStyle = "#2783DE";
+        ctx.fillRect(pad, y - 14, 3, 18);
+        ctx.fillStyle = "#2C2C2B";
+        ctx.font = "bold 15px " + F;
+        ctx.fillText(l.text, pad + 10, y);
+      } else {
+        y += lhKv;
+        ctx.fillStyle = "#7D7A75";
+        ctx.font = "13px " + F;
+        ctx.fillText(l.k, pad + 10, y);
+        var vx = pad + 250;
+        if (l.mark) {
+          ctx.fillStyle = l.mark === "ok" ? "#2783DE" : "#E56458";
+          ctx.beginPath();
+          ctx.arc(vx + 5, y - 5, 5, 0, Math.PI * 2);
+          ctx.fill();
+          vx += 16;
+        }
+        ctx.fillStyle = l.mark === "ok" ? "#2783DE" : (l.mark === "ng" ? "#E56458" : "#2C2C2B");
+        ctx.font = "600 14px " + F;
+        ctx.fillText(l.v, vx, y);
+      }
+    });
+    if (location.hash.indexOf("#demo-png") === 0) {
+      cv.style.width = W + "px";
+      cv.style.height = "auto";
+      document.body.appendChild(cv);
+      return;
+    }
+    var a = document.createElement("a");
+    a.download = "製図電卓_" + tabName + "_" + now.getFullYear() + z(now.getMonth() + 1) + z(now.getDate()) + "-" + z(now.getHours()) + z(now.getMinutes()) + ".png";
+    a.href = cv.toDataURL("image/png");
+    a.click();
+  }
+  document.getElementById("btn-png").addEventListener("click", exportPng);
+
   /* ---------- デモ用プリセット（#demo / #demo-shasen） ---------- */
   var hash = location.hash;
-  if (hash === "#demo" || hash === "#demo-shasen" || hash === "#demo-vol" || hash === "#demo-com") {
+  if (hash === "#demo" || hash === "#demo-shasen" || hash === "#demo-vol" || hash === "#demo-com" || hash.indexOf("#demo-png") === 0) {
     document.getElementById("k-site").value = "2800";
     document.getElementById("k-bcr").value = "70";
     document.getElementById("k-low").value = "1862.33";
@@ -659,6 +808,8 @@
       kz.value = "1.5";
       kz.dispatchEvent(new Event("change"));
     }
+    if (hash === "#demo-png") exportPng();
+    if (hash === "#demo-png-shasen") { document.getElementById("tab-shasen").click(); exportPng(); }
   }
 })();
 </script>
