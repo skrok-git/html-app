@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>一級建築士製図電卓</title>
+<style>
+  :root {
+    --text: #2C2C2B;
+    --text-2: #7D7A75;
+    --canvas: #FFFFFF;
+    --surface: #F9F8F7;
+    --surface-2: #F0EFED;
+    --border: #E6E5E3;
+    --blue: #2783DE;
+    --blue-soft: #E5F2FC;
+    --green: #46A171;
+    --red: #E56458;
+    --red-soft: #FCE9E7;
+    --blue-dot: #2783DE;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --text: #FFFFFF;
+      --text-2: rgba(255,255,255,0.65);
+      --canvas: #191919;
+      --surface: #202020;
+      --surface-2: #2A2A29;
+      --border: rgba(255,255,255,0.20);
+      --blue: #5E9FE8;
+      --blue-soft: rgba(94,159,232,0.12);
+      --green: #72BC8F;
+      --red: #E97366;
+      --red-soft: rgba(233,115,102,0.12);
+      --blue-dot: #5E9FE8;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", sans-serif;
+    background: var(--canvas);
+    color: var(--text);
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 24px 20px 48px; }
+  header h1 { font-size: 22px; margin: 0 0 2px; letter-spacing: 0.02em; }
+  header p { margin: 0 0 20px; color: var(--text-2); font-size: 14px; }
+
+  .tabs { display: flex; gap: 8px; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+  .tab {
+    appearance: none; background: none; border: none; cursor: pointer;
+    font: inherit; font-size: 15px; font-weight: 600; color: var(--text-2);
+    padding: 10px 14px; border-bottom: 2px solid transparent; margin-bottom: -1px;
+    min-height: 44px;
+  }
+  .tab[aria-selected="true"] { color: var(--blue); border-bottom-color: var(--blue); }
+  .tab:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; border-radius: 4px; }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px; margin-bottom: 16px;
+  }
+  .card h2 { font-size: 15px; margin: 0 0 14px; color: var(--text-2); font-weight: 600; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px 16px; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field.full { grid-column: 1 / -1; }
+  .road-title {
+    font-size: 14px; margin: 20px 0 6px;
+    padding-left: 10px; border-left: 3px solid var(--blue);
+  }
+  .road-title:first-of-type { margin-top: 0; }
+  .road-title .muted { font-weight: 400; }
+  label { font-size: 13px; color: var(--text-2); font-weight: 600; }
+  input, select {
+    font: inherit; font-size: 16px; color: var(--text);
+    background: var(--canvas); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 12px; min-height: 44px; width: 100%;
+  }
+  input:focus, select:focus { outline: 2px solid var(--blue); outline-offset: -1px; border-color: var(--blue); }
+  input:disabled { background: var(--surface-2); color: var(--text-2); opacity: 0.6; }
+  input::placeholder { color: var(--text-2); opacity: 0.35; }
+  .dist-box {
+    background: var(--blue-soft); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 12px; min-height: 44px;
+    display: flex; align-items: center; font-weight: 700; color: var(--blue);
+    font-variant-numeric: tabular-nums;
+  }
+
+  table.result { width: 100%; border-collapse: collapse; font-size: 15px; }
+  table.result th, table.result td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); }
+  table.result tr:last-child td { border-bottom: none; }
+  table.result th { font-size: 13px; color: var(--text-2); font-weight: 600; }
+  .num { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .muted { color: var(--text-2); font-weight: 400; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-weight: 700; font-variant-numeric: tabular-nums;
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .ok .dot { background: var(--blue-dot); }
+  .ok { color: var(--blue); }
+  .ng .dot { background: var(--red); }
+  .ng { color: var(--red); }
+
+  .note { font-size: 13px; color: var(--text-2); margin: 12px 0 0; }
+  .pill {
+    display: inline-block; font-size: 13px; font-weight: 600;
+    background: var(--blue-soft); color: var(--blue);
+    border-radius: 999px; padding: 2px 10px; margin-left: 8px; vertical-align: middle;
+  }
+
+  .check-row { display: flex; gap: 24px; flex-wrap: wrap; }
+  .check {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 15px; font-weight: 600; color: var(--text); cursor: pointer;
+  }
+  .check input[type="checkbox"] {
+    width: 18px; height: 18px; min-height: 0; padding: 0;
+    accent-color: var(--blue); cursor: pointer;
+  }
+  .grayed { opacity: 0.45; }
+
+  .btn-png {
+    appearance: none; font: inherit; font-size: 14px; font-weight: 600;
+    color: var(--blue); background: var(--blue-soft);
+    border: 1px solid var(--blue); border-radius: 8px;
+    padding: 6px 14px; cursor: pointer;
+    margin-left: auto; align-self: center;
+  }
+  .btn-png:active { opacity: 0.7; }
+
+  @media (max-width: 480px) {
+    .wrap { padding: 16px 16px 40px; }
+    .grid, .grid3 { grid-template-columns: 1fr; }
+    table.result { font-size: 14px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>一級建築士製図電卓</h1>
+    <p>コマ出し（面積レンジ）と道路斜線（必要セットバック）の検討ツール</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" id="tab-koma" role="tab" aria-selected="true" aria-controls="panel-koma">コマ出し</button>
+    <button class="tab" id="tab-shasen" role="tab" aria-selected="false" aria-controls="panel-shasen">道路斜線</button>
+    <button class="btn-png" id="btn-png" type="button">PNG保存</button>
+  </div>
+
+  <!-- ================= コマ出し ================= -->
+  <section class="panel active" id="panel-koma" role="tabpanel" aria-labelledby="tab-koma">
+    <div class="card">
+      <h2>入力</h2>
+      <div class="grid">
+        <div class="field full">
+          <label for="k-title">課題名（任意）</label>
+          <input type="text" id="k-title" placeholder="例：R8課題①">
+        </div>
+      </div>
+      <div class="grid3" style="margin-top:12px;">
+        <div class="field">
+          <label for="k-zone">用途地域区分</label>
+          <select id="k-zone">
+            <option value="1.25" selected>住居系（4/10）</option>
+            <option value="1.5">商業系（6/10）</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="k-site">敷地面積（㎡）</label>
+          <input type="number" id="k-site" inputmode="numeric" step="1" min="0" placeholder="例：2800">
+        </div>
+        <div class="field">
+          <label for="k-bcr">建ぺい率（％）</label>
+          <input type="number" id="k-bcr" inputmode="numeric" step="1" min="0" placeholder="例：70">
+        </div>
+      </div>
+      <div class="grid3" style="margin-top:12px;">
+        <div class="field">
+          <label for="k-fr">前面道路幅員（m）</label>
+          <input type="number" id="k-fr" inputmode="numeric" step="1" min="0" placeholder="例：6">
+        </div>
+        <div class="field">
+          <label for="k-cr">指定容積率（％）</label>
+          <input type="number" id="k-cr" inputmode="numeric" step="1" min="0" placeholder="例：300">
+        </div>
+        <div class="field">
+          <label for="k-rr">道路容積率（％・自動）</label>
+          <input type="number" id="k-rr" readonly tabindex="-1" placeholder="自動計算">
+        </div>
+      </div>
+      <div class="grid" style="margin-top:12px;">
+        <div class="field full">
+          <label for="k-ba">建築可能面積（㎡・自動＝敷地面積×建ぺい率）</label>
+          <input type="number" id="k-ba" readonly tabindex="-1" placeholder="自動計算（小数第2位切り捨て）">
+        </div>
+        <div class="field full">
+          <label>床面積の指定方法</label>
+          <div class="check-row">
+            <label class="check"><input type="checkbox" id="k-mode-spec" checked> 面積指定</label>
+            <label class="check"><input type="checkbox" id="k-mode-vol"> 容積率による床面積</label>
+          </div>
+        </div>
+        <div class="field">
+          <label for="k-low">床面積 下限（㎡）</label>
+          <input type="number" id="k-low" inputmode="decimal" step="0.01" min="0" placeholder="例：1862.33">
+        </div>
+        <div class="field">
+          <label for="k-high">床面積 上限（㎡）</label>
+          <input type="number" id="k-high" inputmode="decimal" step="0.01" min="0" placeholder="例：3232.6">
+        </div>
+        <div class="field" id="k-vol-field">
+          <label for="k-vol-high">容積率による床面積上限（㎡・自動）</label>
+          <input type="number" id="k-vol-high" readonly tabindex="-1" placeholder="自動計算（小数第2位切り捨て）">
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>結果①：建築可能面積のコマ出し（上限のみ・切り捨て）</h2>
+      <table class="result">
+        <thead>
+          <tr><th>スパン候補</th><th>1コマ面積</th><th>コマ数</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>6m × 7m</td><td class="num muted">42㎡</td><td class="num" id="k-ba-42">–</td></tr>
+          <tr><td>7m × 7m</td><td class="num muted">49㎡</td><td class="num" id="k-ba-49">–</td></tr>
+          <tr><td>7m × 8m</td><td class="num muted">56㎡</td><td class="num" id="k-ba-56">–</td></tr>
+        </tbody>
+      </table>
+      <p class="note">建築可能面積（敷地面積×建ぺい率）を上限としたコマ数。</p>
+    </div>
+
+    <div class="card" id="k-card-spec">
+      <h2>結果②：床面積のコマ出し（最小コマ＝下限を切り上げ ／ 最大コマ＝上限を切り捨て）</h2>
+      <table class="result">
+        <thead>
+          <tr><th>スパン候補</th><th>1コマ面積</th><th>コマ数</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>6m × 7m</td><td class="num muted">42㎡</td><td class="num" id="k-out-42">–</td></tr>
+          <tr><td>7m × 7m</td><td class="num muted">49㎡</td><td class="num" id="k-out-49">–</td></tr>
+          <tr><td>7m × 8m</td><td class="num muted">56㎡</td><td class="num" id="k-out-56">–</td></tr>
+        </tbody>
+      </table>
+      <p class="note">片方だけの入力もOK（下限のみ→「◯コマ以上」、上限のみ→「◯コマ以下」）。</p>
+    </div>
+
+    <div class="card" id="k-card-vol">
+      <h2>結果③：容積率による床面積のコマ出し（上限のみ・切り捨て）</h2>
+      <table class="result">
+        <thead>
+          <tr><th>スパン候補</th><th>1コマ面積</th><th>コマ数</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>6m × 7m</td><td class="num muted">42㎡</td><td class="num" id="k-vol-42">–</td></tr>
+          <tr><td>7m × 7m</td><td class="num muted">49㎡</td><td class="num" id="k-vol-49">–</td></tr>
+          <tr><td>7m × 8m</td><td class="num muted">56㎡</td><td class="num" id="k-vol-56">–</td></tr>
+        </tbody>
+      </table>
+      <p class="note">容積率による床面積上限（敷地面積×採用容積率）を上限としたコマ数。</p>
+    </div>
+  </section>
+
+  <!-- ================= 道路斜線 ================= -->
+  <section class="panel" id="panel-shasen" role="tabpanel" aria-labelledby="tab-shasen">
+    <div class="card">
+      <h2>入力</h2>
+      <div class="grid">
+        <div class="field full">
+          <label for="s-title">課題名（任意）</label>
+          <input type="text" id="s-title" placeholder="例：R8課題①">
+        </div>
+        <div class="field">
+          <label for="s-zone">用途地域区分</label>
+          <select id="s-zone">
+            <option value="1.25" selected>住居系（勾配 1.25）</option>
+            <option value="1.5">商業系（勾配 1.5）</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="s-col">柱サイズ（m）</label>
+          <select id="s-col">
+            <option value="0.65" selected>0.65</option>
+            <option value="0.70">0.70</option>
+            <option value="0.75">0.75</option>
+            <option value="0.80">0.80</option>
+            <option value="0.85">0.85</option>
+            <option value="0.90">0.90</option>
+            <option value="0.95">0.95</option>
+            <option value="1.00">1.00</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid3" style="margin-top:12px;">
+        <div class="field">
+          <label for="s-fr">前面道路幅員（m）</label>
+          <input type="number" id="s-fr" inputmode="numeric" step="1" min="0" placeholder="例：6">
+        </div>
+        <div class="field">
+          <label for="s-cr">指定容積率（％）</label>
+          <input type="number" id="s-cr" inputmode="numeric" step="1" min="0" placeholder="例：300">
+        </div>
+        <div class="field">
+          <label for="s-rr">道路容積率（％・自動）</label>
+          <input type="number" id="s-rr" readonly tabindex="-1" placeholder="自動計算">
+        </div>
+      </div>
+      <div class="field" style="margin-top:12px;">
+        <label>道路斜線適用距離（法別表第3（は）欄・自動）</label>
+        <div class="dist-box" id="s-dist">–</div>
+      </div>
+      <div class="grid3" style="margin-top:12px;">
+        <div class="field">
+          <label for="s-ra">道路幅員A（m）（前面道路）</label>
+          <input type="number" id="s-ra" inputmode="decimal" step="1" min="0" placeholder="例：8">
+        </div>
+        <div class="field">
+          <label for="s-rb">道路幅員B（m）</label>
+          <input type="number" id="s-rb" inputmode="decimal" step="1" min="0" placeholder="例：7">
+        </div>
+        <div class="field">
+          <label for="s-rc">道路幅員C（m）</label>
+          <input type="number" id="s-rc" inputmode="decimal" step="1" min="0" placeholder="例：6">
+        </div>
+      </div>
+      <div class="field" style="margin-top:12px;">
+        <label class="check"><input type="checkbox" id="s-diff-on"> 道路高低差アリ（計画地盤面を基準として高低差±記入）</label>
+      </div>
+      <div class="grid3 grayed" style="margin-top:8px;" id="s-diff-row">
+        <div class="field">
+          <label for="s-da">道路高低差A（m）</label>
+          <input type="number" id="s-da" inputmode="decimal" step="0.01" value="0" disabled>
+        </div>
+        <div class="field">
+          <label for="s-db">道路高低差B（m）</label>
+          <input type="number" id="s-db" inputmode="decimal" step="0.01" value="0" disabled>
+        </div>
+        <div class="field">
+          <label for="s-dc">道路高低差C（m）</label>
+          <input type="number" id="s-dc" inputmode="decimal" step="0.01" value="0" disabled>
+        </div>
+      </div>
+      <div class="grid3" style="margin-top:12px;">
+        <div class="field">
+          <label for="s-ha">高さA（m）</label>
+          <input type="number" id="s-ha" inputmode="decimal" step="0.01" min="0" placeholder="例：12">
+        </div>
+        <div class="field">
+          <label for="s-hb">高さB（m）</label>
+          <input type="number" id="s-hb" inputmode="decimal" step="0.01" min="0" placeholder="例：10">
+        </div>
+        <div class="field">
+          <label for="s-hc">高さC（m）</label>
+          <input type="number" id="s-hc" inputmode="decimal" step="0.01" min="0" placeholder="例：9">
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>結果（●青＝後退不要（適合） ／ ●赤＝後退が必要）<span class="pill" id="s-grad">勾配 1.25</span></h2>
+
+      <h3 class="road-title">道路A <span class="muted" id="s-road-info-a">（幅員 –）</span></h3>
+      <table class="result">
+        <thead>
+          <tr><th>高さ候補</th><th>計算結果</th><th>必要セットバック</th></tr>
+        </thead>
+        <tbody>
+          <tr><td id="s-hl-aa">高さA：–</td><td class="num" id="s-res-aa">–</td><td id="s-set-aa">–</td></tr>
+          <tr><td id="s-hl-ab">高さB：–</td><td class="num" id="s-res-ab">–</td><td id="s-set-ab">–</td></tr>
+          <tr><td id="s-hl-ac">高さC：–</td><td class="num" id="s-res-ac">–</td><td id="s-set-ac">–</td></tr>
+        </tbody>
+      </table>
+
+      <h3 class="road-title">道路B <span class="muted" id="s-road-info-b">（幅員 –）</span></h3>
+      <table class="result">
+        <thead>
+          <tr><th>高さ候補</th><th>計算結果</th><th>必要セットバック</th></tr>
+        </thead>
+        <tbody>
+          <tr><td id="s-hl-ba">高さA：–</td><td class="num" id="s-res-ba">–</td><td id="s-set-ba">–</td></tr>
+          <tr><td id="s-hl-bb">高さB：–</td><td class="num" id="s-res-bb">–</td><td id="s-set-bb">–</td></tr>
+          <tr><td id="s-hl-bc">高さC：–</td><td class="num" id="s-res-bc">–</td><td id="s-set-bc">–</td></tr>
+        </tbody>
+      </table>
+
+      <h3 class="road-title">道路C <span class="muted" id="s-road-info-c">（幅員 –）</span></h3>
+      <table class="result">
+        <thead>
+          <tr><th>高さ候補</th><th>計算結果</th><th>必要セットバック</th></tr>
+        </thead>
+        <tbody>
+          <tr><td id="s-hl-ca">高さA：–</td><td class="num" id="s-res-ca">–</td><td id="s-set-ca">–</td></tr>
+          <tr><td id="s-hl-cb">高さB：–</td><td class="num" id="s-res-cb">–</td><td id="s-set-cb">–</td></tr>
+          <tr><td id="s-hl-cc">高さC：–</td><td class="num" id="s-res-cc">–</td><td id="s-set-cc">–</td></tr>
+        </tbody>
+      </table>
+
+      <p class="note">計算式：((補正後高さ ÷ 勾配) − 道路幅員) ÷ 2 ＋ 柱サイズ ÷ 2 ／ マイナスは 0（適合）、正の値は切り上げ。<br>道路高低差：−（道路が低い）は高さに加算・＋（道路が高い）は減算。敷地が道路より1m以上高い場合は令第135条の2の緩和（加算量＝（高低差＋1）÷2）を自動適用。</p>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- タブ切り替え ---------- */
+  var tabs = [
+    { tab: document.getElementById("tab-koma"), panel: document.getElementById("panel-koma") },
+    { tab: document.getElementById("tab-shasen"), panel: document.getElementById("panel-shasen") }
+  ];
+  tabs.forEach(function (t) {
+    t.tab.addEventListener("click", function () {
+      tabs.forEach(function (u) {
+        var active = u === t;
+        u.tab.setAttribute("aria-selected", active ? "true" : "false");
+        u.panel.classList.toggle("active", active);
+      });
+    });
+  });
+
+  function num(id) {
+    var v = document.getElementById(id).value.trim();
+    if (v === "") return null;
+    var n = parseFloat(v);
+    return isFinite(n) ? n : null;
+  }
+
+  /* ---------- コマ出し ---------- */
+  var SPANS = [{ area: 42, id: "k-out-42" }, { area: 49, id: "k-out-49" }, { area: 56, id: "k-out-56" }];
+
+  function calcKoma() {
+    var low = num("k-low");
+    var high = num("k-high");
+    SPANS.forEach(function (s) {
+      var el = document.getElementById(s.id);
+      if (low === null && high === null) { el.textContent = "–"; return; }
+      var min = low === null ? null : Math.ceil(low / s.area);
+      var max = high === null ? null : Math.floor(high / s.area);
+      if (min !== null && max !== null) el.textContent = min + " 〜 " + max + " コマ";
+      else if (min !== null) el.textContent = min + " コマ以上";
+      else el.textContent = max + " コマ以下";
+    });
+  }
+
+  ["k-low", "k-high"].forEach(function (id) {
+    document.getElementById(id).addEventListener("input", calcKoma);
+  });
+
+  /* ---------- 建築可能面積（敷地面積×建ぺい率）のコマ出し ---------- */
+  var BA_SPANS = [{ area: 42, id: "k-ba-42" }, { area: 49, id: "k-ba-49" }, { area: 56, id: "k-ba-56" }];
+
+  function calcKomaBa() {
+    var site = num("k-site");
+    var bcr = num("k-bcr");
+    var baEl = document.getElementById("k-ba");
+
+    // 建築可能面積 = 敷地面積 × 建ぺい率（小数第2位切り捨て＝小数第1位まで）
+    var ba = null;
+    if (site !== null && bcr !== null) {
+      ba = Math.floor(site * bcr / 10 + 1e-9) / 10; // ×％→1/100と×10をまとめて1/10（浮動小数点誤差対策）
+      baEl.value = ba;
+    } else {
+      baEl.value = "";
+    }
+
+    BA_SPANS.forEach(function (s) {
+      var el = document.getElementById(s.id);
+      el.textContent = ba === null ? "–" : Math.floor(ba / s.area) + " コマ以下";
+    });
+  }
+
+  ["k-site", "k-bcr"].forEach(function (id) {
+    document.getElementById(id).addEventListener("input", calcKomaBa);
+  });
+  document.getElementById("k-site").addEventListener("input", function () { calcVolFloor(); });
+
+  /* ---------- 容積率による床面積のコマ出し ---------- */
+  var VOL_SPANS = [{ area: 42, id: "k-vol-42" }, { area: 49, id: "k-vol-49" }, { area: 56, id: "k-vol-56" }];
+  var adoptedRatio = null; // 採用容積率（％）＝min(指定容積率, 道路容積率)。calcVolumeで更新
+
+  function calcVolFloor() {
+    var site = num("k-site");
+    var volEl = document.getElementById("k-vol-high");
+    var vh = null;
+    if (site !== null && adoptedRatio !== null) {
+      vh = Math.floor(site * adoptedRatio / 10 + 1e-9) / 10; // 敷地面積×採用容積率（小数第2位切り捨て・浮動小数点誤差対策）
+      volEl.value = vh;
+    } else {
+      volEl.value = "";
+    }
+    VOL_SPANS.forEach(function (s) {
+      var el = document.getElementById(s.id);
+      el.textContent = vh === null ? "–" : Math.floor(vh / s.area) + " コマ以下";
+    });
+  }
+
+  /* ---------- 床面積の指定方法（面積指定／容積率による床面積） ---------- */
+  function setFloorMode(mode) {
+    var spec = mode === "spec";
+    document.getElementById("k-mode-spec").checked = spec;
+    document.getElementById("k-mode-vol").checked = !spec;
+    document.getElementById("k-low").disabled = !spec;
+    document.getElementById("k-high").disabled = !spec;
+    document.getElementById("k-vol-high").disabled = spec;
+    document.getElementById("k-vol-field").classList.toggle("grayed", spec);
+    document.getElementById("k-card-spec").classList.toggle("grayed", !spec);
+    document.getElementById("k-card-vol").classList.toggle("grayed", spec);
+  }
+  document.getElementById("k-mode-spec").addEventListener("change", function () { setFloorMode("spec"); });
+  document.getElementById("k-mode-vol").addEventListener("change", function () { setFloorMode("vol"); });
+  setFloorMode("spec");
+
+  /* ---------- 道路斜線（道路A/B/C × 高さA/B/C の全組み合わせ） ---------- */
+  var ROADS = [
+    { input: "s-ra", diff: "s-da", key: "a", info: "s-road-info-a" },
+    { input: "s-rb", diff: "s-db", key: "b", info: "s-road-info-b" },
+    { input: "s-rc", diff: "s-dc", key: "c", info: "s-road-info-c" }
+  ];
+  var HEIGHTS = [
+    { input: "s-ha", key: "a", name: "A" },
+    { input: "s-hb", key: "b", name: "B" },
+    { input: "s-hc", key: "c", name: "C" }
+  ];
+
+  /* ---------- 容積率・道路斜線適用距離（法別表第3） ---------- */
+  var DIST_TABLE = {
+    res: [[200, 20], [300, 25], [400, 30], [Infinity, 35]], // 住居系＝別表第3「1の項」
+    com: [[400, 20], [600, 25], [800, 30], [1000, 35], [1100, 40], [1200, 45], [Infinity, 50]] // 商業系＝同「2の項」
+  };
+
+  function calcVolume() {
+    var zone = document.getElementById("s-zone").value; // "1.25"＝住居系 / "1.5"＝商業系
+    var fr = num("s-fr");
+    var cr = num("s-cr");
+    var rrEl = document.getElementById("s-rr");
+    var krrEl = document.getElementById("k-rr");
+    var distEl = document.getElementById("s-dist");
+
+    // コマ出しタブ側の用途地域区分・前面道路幅員・指定容積率にも同じ値を反映（双方向同期）
+    var kzoneEl = document.getElementById("k-zone");
+    if (kzoneEl.value !== zone) kzoneEl.value = zone;
+    var kfrEl = document.getElementById("k-fr");
+    var kcrEl = document.getElementById("k-cr");
+    if (kfrEl.value !== document.getElementById("s-fr").value) kfrEl.value = document.getElementById("s-fr").value;
+    if (kcrEl.value !== document.getElementById("s-cr").value) kcrEl.value = document.getElementById("s-cr").value;
+
+    // 道路容積率：前面道路幅員が12m未満のときのみ（住居系×4/10、商業系×6/10）
+    var rr = null;
+    if (fr !== null && fr >= 12) {
+      rrEl.disabled = true;  // 12m以上は対象外 → グレーアウト
+      krrEl.disabled = true;
+      rrEl.value = "";
+      krrEl.value = "";
+    } else {
+      rrEl.disabled = false;
+      krrEl.disabled = false;
+      if (fr !== null) {
+        rr = fr * (zone === "1.5" ? 60 : 40);
+        rrEl.value = rr;
+        krrEl.value = rr;
+      } else {
+        rrEl.value = "";
+        krrEl.value = "";
+      }
+    }
+
+    // 道路幅員Aに前面道路幅員を自動反映
+    document.getElementById("s-ra").value = fr === null ? "" : fr;
+    calcShasen();
+
+    // 採用容積率＝指定容積率と道路容積率の小さい方（片方のみのときはその値）
+    var adopted = null;
+    if (cr !== null && rr !== null) adopted = Math.min(cr, rr);
+    else if (cr !== null) adopted = cr;
+    else if (rr !== null) adopted = rr;
+
+    // 容積率による床面積上限（コマ出しタブ）を更新
+    adoptedRatio = adopted;
+    calcVolFloor();
+
+    if (adopted === null) {
+      distEl.textContent = "–";
+      return;
+    }
+    var table = zone === "1.5" ? DIST_TABLE.com : DIST_TABLE.res;
+    var dist = table[table.length - 1][1];
+    for (var i = 0; i < table.length; i++) {
+      if (adopted <= table[i][0]) { dist = table[i][1]; break; }
+    }
+    distEl.textContent = dist + " m（採用容積率 " + adopted + "％）";
+  }
+
+  ["s-fr", "s-cr"].forEach(function (id) {
+    document.getElementById(id).addEventListener("input", calcVolume);
+  });
+  ["k-fr", "k-cr"].forEach(function (id) {
+    document.getElementById(id).addEventListener("input", function () {
+      var target = id === "k-fr" ? "s-fr" : "s-cr";
+      document.getElementById(target).value = document.getElementById(id).value;
+      calcVolume();
+    });
+  });
+  document.getElementById("s-zone").addEventListener("change", calcVolume);
+  document.getElementById("k-zone").addEventListener("change", function () {
+    document.getElementById("s-zone").value = document.getElementById("k-zone").value;
+    calcVolume();
+  });
+
+  function round2(n) { return Math.round(n * 100) / 100; }
+
+  // 道路高低差の補正量（高さに加算する値）を返す。diff＝道路面−地盤面
+  function diffAdjust(diff) {
+    if (diff < 0) {
+      var drop = -diff; // 敷地が道路より高い
+      // 高低差1m以上は令第135条の2の緩和：道路は（高低差−1）÷2だけ高い位置にあるとみなす
+      return drop >= 1 ? (drop + 1) / 2 : drop;
+    }
+    return -diff; // 道路が高い場合はそのまま減算
+  }
+
+  function calcShasen() {
+    var grad = parseFloat(document.getElementById("s-zone").value); // 商業系1.5 / 住居系1.25
+    var col = num("s-col");
+    var diffOn = document.getElementById("s-diff-on").checked;
+    document.getElementById("s-grad").textContent = "勾配 " + grad;
+
+    ROADS.forEach(function (r) {
+      var road = num(r.input);
+      var diffRaw = diffOn ? num(r.diff) : null;
+      var diff = diffRaw === null ? 0 : diffRaw; // 空欄は0扱い
+      var adjust = diffAdjust(diff);
+      document.getElementById(r.info).textContent =
+        road === null ? "（幅員 –）" : "（幅員 " + road + "m" + (diffOn ? "・高低差 " + diff + "m" : "") + "）";
+
+      HEIGHTS.forEach(function (h) {
+        var height = num(h.input);
+        var hlEl = document.getElementById("s-hl-" + r.key + h.key);
+        var resEl = document.getElementById("s-res-" + r.key + h.key);
+        var setEl = document.getElementById("s-set-" + r.key + h.key);
+
+        var effHeight = height === null ? null : height + adjust;
+        if (height === null) {
+          hlEl.textContent = "高さ" + h.name + "：–";
+        } else if (adjust !== 0) {
+          hlEl.textContent = "高さ" + h.name + "：" + round2(effHeight) + "m（" + height + (adjust > 0 ? "＋" : "−") + Math.abs(round2(adjust)) + "）";
+        } else {
+          hlEl.textContent = "高さ" + h.name + "：" + height + "m";
+        }
+
+        if (height === null || road === null || col === null) {
+          resEl.textContent = "–";
+          setEl.textContent = "–";
+          return;
+        }
+        // 結果 = ((補正後高さ/勾配) - 道路幅員)/2 + 柱サイズ/2
+        var result = ((effHeight / grad) - road) / 2 + col / 2;
+        // 離れ = 結果>=0 ? CEILING(結果) : 0
+        var setback = result >= 0 ? Math.ceil(result) : 0;
+
+        resEl.textContent = result.toFixed(2) + " m";
+        var ok = setback === 0;
+        setEl.innerHTML =
+          '<span class="badge ' + (ok ? "ok" : "ng") + '">' +
+          '<span class="dot" aria-hidden="true"></span>' +
+          setback + " m" + (ok ? "（適合）" : "（後退必要）") +
+          "</span>";
+      });
+    });
+  }
+
+  ["s-zone", "s-col", "s-ra", "s-rb", "s-rc", "s-da", "s-db", "s-dc", "s-ha", "s-hb", "s-hc"].forEach(function (id) {
+    var ev = (id === "s-zone" || id === "s-col") ? "change" : "input";
+    document.getElementById(id).addEventListener(ev, calcShasen);
+  });
+
+  /* ---------- 道路高低差チェック（ABC共通・デフォルトOFF） ---------- */
+  document.getElementById("s-diff-on").addEventListener("change", function () {
+    var on = this.checked;
+    ["s-da", "s-db", "s-dc"].forEach(function (id) {
+      document.getElementById(id).disabled = !on;
+    });
+    document.getElementById("s-diff-row").classList.toggle("grayed", !on);
+    calcShasen();
+  });
+
+  /* ---------- PNG書き出し（表示中のタブの入力・出力を画像化） ---------- */
+  function pngVal(id, unit) {
+    var v = document.getElementById(id).value;
+    return v === "" ? "–" : v + (unit || "");
+  }
+  function pngSel(id) {
+    var el = document.getElementById(id);
+    return el.options[el.selectedIndex].text;
+  }
+  function pngTxt(id) { return document.getElementById(id).textContent; }
+  function pngMark(id) {
+    var b = document.querySelector("#" + id + " .badge");
+    if (!b) return null;
+    return b.classList.contains("ok") ? "ok" : "ng";
+  }
+
+  function buildKomaLines() {
+    var spec = document.getElementById("k-mode-spec").checked;
+    var L = [];
+    L.push({ t: "sec", text: "入力" });
+    L.push({ t: "kv", k: "課題名", v: document.getElementById("k-title").value || "–" });
+    L.push({ t: "kv", k: "用途地域区分", v: pngSel("k-zone") });
+    L.push({ t: "kv", k: "敷地面積", v: pngVal("k-site", " ㎡") });
+    L.push({ t: "kv", k: "建ぺい率", v: pngVal("k-bcr", " ％") });
+    L.push({ t: "kv", k: "前面道路幅員", v: pngVal("k-fr", " m") });
+    L.push({ t: "kv", k: "指定容積率", v: pngVal("k-cr", " ％") });
+    L.push({ t: "kv", k: "道路容積率（自動）", v: pngVal("k-rr", " ％") });
+    L.push({ t: "kv", k: "建築可能面積（自動）", v: pngVal("k-ba", " ㎡") });
+    L.push({ t: "kv", k: "床面積の指定方法", v: spec ? "面積指定" : "容積率による床面積" });
+    L.push({ t: "kv", k: "床面積 下限／上限", v: pngVal("k-low", " ㎡") + " ／ " + pngVal("k-high", " ㎡") });
+    L.push({ t: "kv", k: "容積率による床面積上限（自動）", v: pngVal("k-vol-high", " ㎡") });
+    L.push({ t: "sec", text: "結果①：建築可能面積のコマ出し" });
+    [["6m × 7m（42㎡）", "k-ba-42"], ["7m × 7m（49㎡）", "k-ba-49"], ["7m × 8m（56㎡）", "k-ba-56"]].forEach(function (r) {
+      L.push({ t: "kv", k: r[0], v: pngTxt(r[1]) });
+    });
+    L.push({ t: "sec", text: "結果②：床面積のコマ出し" + (spec ? "" : "（未使用）") });
+    [["6m × 7m（42㎡）", "k-out-42"], ["7m × 7m（49㎡）", "k-out-49"], ["7m × 8m（56㎡）", "k-out-56"]].forEach(function (r) {
+      L.push({ t: "kv", k: r[0], v: pngTxt(r[1]) });
+    });
+    L.push({ t: "sec", text: "結果③：容積率による床面積のコマ出し" + (spec ? "（未使用）" : "") });
+    [["6m × 7m（42㎡）", "k-vol-42"], ["7m × 7m（49㎡）", "k-vol-49"], ["7m × 8m（56㎡）", "k-vol-56"]].forEach(function (r) {
+      L.push({ t: "kv", k: r[0], v: pngTxt(r[1]) });
+    });
+    return L;
+  }
+
+  function buildShasenLines() {
+    var L = [];
+    L.push({ t: "sec", text: "入力" });
+    L.push({ t: "kv", k: "課題名", v: document.getElementById("s-title").value || "–" });
+    L.push({ t: "kv", k: "用途地域区分", v: pngSel("s-zone") });
+    L.push({ t: "kv", k: "柱サイズ", v: pngSel("s-col") + " m" });
+    L.push({ t: "kv", k: "前面道路幅員", v: pngVal("s-fr", " m") });
+    L.push({ t: "kv", k: "指定容積率", v: pngVal("s-cr", " ％") });
+    L.push({ t: "kv", k: "道路容積率（自動）", v: pngVal("s-rr", " ％") });
+    L.push({ t: "kv", k: "道路斜線適用距離", v: pngTxt("s-dist") });
+    L.push({ t: "kv", k: "道路幅員A／B／C", v: pngVal("s-ra", " m") + " ／ " + pngVal("s-rb", " m") + " ／ " + pngVal("s-rc", " m") });
+    var dOn = document.getElementById("s-diff-on").checked;
+    L.push({ t: "kv", k: "道路高低差A／B／C", v: dOn ? pngVal("s-da", " m") + " ／ " + pngVal("s-db", " m") + " ／ " + pngVal("s-dc", " m") : "なし（チェックOFF）" });
+    L.push({ t: "kv", k: "高さA／B／C", v: pngVal("s-ha", " m") + " ／ " + pngVal("s-hb", " m") + " ／ " + pngVal("s-hc", " m") });
+    ["a", "b", "c"].forEach(function (rk) {
+      L.push({ t: "sec", text: "道路" + rk.toUpperCase() + " " + pngTxt("s-road-info-" + rk) + "　" + pngTxt("s-grad") });
+      ["a", "b", "c"].forEach(function (hk) {
+        L.push({
+          t: "kv",
+          k: pngTxt("s-hl-" + rk + hk),
+          v: pngTxt("s-res-" + rk + hk) + "　→　必要セットバック " + pngTxt("s-set-" + rk + hk),
+          mark: pngMark("s-set-" + rk + hk)
+        });
+      });
+    });
+    return L;
+  }
+
+  function exportPng() {
+    var koma = document.getElementById("panel-koma").classList.contains("active");
+    var tabName = koma ? "コマ出し" : "道路斜線";
+    var lines = koma ? buildKomaLines() : buildShasenLines();
+    var W = 680, pad = 28, lhKv = 26, lhSec = 42;
+    var H = pad + 40;
+    lines.forEach(function (l) { H += l.t === "sec" ? lhSec : lhKv; });
+    H += pad;
+    var scale = 2;
+    var cv = document.createElement("canvas");
+    cv.width = W * scale;
+    cv.height = H * scale;
+    var ctx = cv.getContext("2d");
+    ctx.scale(scale, scale);
+    var F = '-apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif';
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(0, 0, W, H);
+    var now = new Date();
+    function z(n) { return (n < 10 ? "0" : "") + n; }
+    var y = pad + 18;
+    ctx.fillStyle = "#2C2C2B";
+    ctx.font = "bold 20px " + F;
+    ctx.fillText("一級建築士製図電卓：" + tabName, pad, y);
+    y += 22;
+    ctx.fillStyle = "#7D7A75";
+    ctx.font = "12px " + F;
+    ctx.fillText("書き出し日時 " + now.getFullYear() + "-" + z(now.getMonth() + 1) + "-" + z(now.getDate()) + " " + z(now.getHours()) + ":" + z(now.getMinutes()), pad, y);
+    lines.forEach(function (l) {
+      if (l.t === "sec") {
+        y += lhSec;
+        ctx.fillStyle = "#2783DE";
+        ctx.fillRect(pad, y - 14, 3, 18);
+        ctx.fillStyle = "#2C2C2B";
+        ctx.font = "bold 15px " + F;
+        ctx.fillText(l.text, pad + 10, y);
+      } else {
+        y += lhKv;
+        ctx.fillStyle = "#7D7A75";
+        ctx.font = "13px " + F;
+        ctx.fillText(l.k, pad + 10, y);
+        var vx = pad + 250;
+        if (l.mark) {
+          ctx.fillStyle = l.mark === "ok" ? "#2783DE" : "#E56458";
+          ctx.beginPath();
+          ctx.arc(vx + 5, y - 5, 5, 0, Math.PI * 2);
+          ctx.fill();
+          vx += 16;
+        }
+        ctx.fillStyle = l.mark === "ok" ? "#2783DE" : (l.mark === "ng" ? "#E56458" : "#2C2C2B");
+        ctx.font = "600 14px " + F;
+        ctx.fillText(l.v, vx, y);
+      }
+    });
+    if (location.hash.indexOf("#demo-png") === 0) {
+      cv.style.width = W + "px";
+      cv.style.height = "auto";
+      document.body.appendChild(cv);
+      return;
+    }
+    var a = document.createElement("a");
+    a.download = "製図電卓_" + tabName + "_" + now.getFullYear() + z(now.getMonth() + 1) + z(now.getDate()) + "-" + z(now.getHours()) + z(now.getMinutes()) + ".png";
+    a.href = cv.toDataURL("image/png");
+    a.click();
+  }
+  document.getElementById("btn-png").addEventListener("click", exportPng);
+
+  /* ---------- デモ用プリセット（#demo / #demo-shasen） ---------- */
+  var hash = location.hash;
+  if (hash === "#demo" || hash === "#demo-shasen" || hash === "#demo-vol" || hash === "#demo-com" || hash === "#demo-diff" || hash.indexOf("#demo-png") === 0) {
+    document.getElementById("k-site").value = "2800";
+    document.getElementById("k-bcr").value = "70";
+    document.getElementById("k-low").value = "1862.33";
+    document.getElementById("k-high").value = "3232.6";
+    document.getElementById("s-col").value = "0.65";
+    document.getElementById("s-fr").value = "8";
+    document.getElementById("s-cr").value = "300";
+    document.getElementById("s-rb").value = "7";
+    document.getElementById("s-rc").value = "6";
+    document.getElementById("s-ha").value = "12";
+    document.getElementById("s-hb").value = "10";
+    document.getElementById("s-hc").value = "9";
+    calcKoma();
+    calcKomaBa();
+    calcVolume();
+    calcShasen();
+    if (hash === "#demo-shasen") document.getElementById("tab-shasen").click();
+    if (hash === "#demo-diff") {
+      document.getElementById("s-diff-on").click();
+      document.getElementById("s-da").value = "-0.7";
+      document.getElementById("s-db").value = "-1.7";
+      document.getElementById("s-dc").value = "1";
+      calcShasen();
+      document.getElementById("tab-shasen").click();
+    }
+    if (hash === "#demo-vol") document.getElementById("k-mode-vol").click();
+    if (hash === "#demo-com") {
+      var kz = document.getElementById("k-zone");
+      kz.value = "1.5";
+      kz.dispatchEvent(new Event("change"));
+    }
+    if (hash === "#demo-png") exportPng();
+    if (hash === "#demo-png-shasen") { document.getElementById("tab-shasen").click(); exportPng(); }
+  }
+})();
+</script>
+</body>
+</html>
