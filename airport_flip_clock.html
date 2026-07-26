@@ -111,12 +111,22 @@
     filter: drop-shadow(0 18px 30px rgba(0,0,0,.6));
   }
   .dial svg { width: 100%; height: 100%; display: block; }
-  .dial.done { animation: dialFlash 1s steps(1, end) infinite; }
+  .dial.done { animation: dialFlash 1.167s steps(1, end) infinite; }
   @keyframes dialFlash {
     0%, 49%   { opacity: 1; }
     50%, 100% { opacity: .18; }
   }
+  .tab.alarm::before {
+    background: radial-gradient(circle at 35% 28%, var(--gold-light), var(--gold-mid) 42%, var(--gold-dark) 100%);
+    box-shadow: 0 0 14px rgba(255,215,104,.72), 0 0 2px rgba(255,246,190,.95);
+    animation: tabAlarm 2.8s ease-in-out infinite;
+  }
+  @keyframes tabAlarm {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: .22; }
+  }
   .readout {
+    color: var(--text);
     font-weight: 700;
     font-size: clamp(30px, 8vw, 56px);
     letter-spacing: -.01em;
@@ -314,7 +324,7 @@
     border-radius: 50%;
     background: radial-gradient(circle at 35% 28%, var(--gold-light), var(--gold-mid) 44%, var(--gold-dark) 100%);
     box-shadow: 0 0 22px rgba(255,215,104,.68), inset 0 1px 1px rgba(255,255,255,.72);
-    animation: slowBlink 2.6s ease-in-out infinite;
+    animation: slowBlink 3.033s ease-in-out infinite;
   }
   @keyframes slowBlink {
     0%, 100% { opacity: 1; transform: scale(1); }
@@ -339,6 +349,83 @@
     font-size: 12px;
     letter-spacing: .12em;
   }
+  /* ---------- analog clock view ---------- */
+  .analog-wrap { display: grid; justify-items: center; gap: clamp(14px, 2.8vw, 22px); }
+  .analog {
+    width: min(340px, 70vw);
+    aspect-ratio: 1 / 1;
+    filter: drop-shadow(0 18px 34px rgba(0,0,0,.65));
+  }
+  .analog svg { width: 100%; height: 100%; display: block; }
+  .analog .hand { stroke-linecap: round; }
+  /* ---------- white mode (INV) ---------- */
+  body.inv {
+    color-scheme: light;
+    --bg: #ffffff;
+    --card: #ebebeb;
+    --card-top: #e3e3e3;
+    --card-bottom: #f0f0f0;
+    --edge: #d0d0d0;
+    --text: #1c1c1c;
+    --muted: #6b665d;
+    --line: rgba(0,0,0,.14);
+  }
+  body.inv .clock-shell {
+    border-color: rgba(0,0,0,.10);
+    background:
+      radial-gradient(circle at 50% 0%, rgba(217,177,92,.10), transparent 42%),
+      linear-gradient(180deg, #fbfbfb, #f1f1f1);
+    box-shadow: 0 20px 70px rgba(0,0,0,.14), inset 0 1px 0 rgba(0,0,0,.04);
+  }
+  body.inv .digit { filter: drop-shadow(0 14px 22px rgba(0,0,0,.18)); }
+  body.inv .dial { filter: drop-shadow(0 18px 30px rgba(0,0,0,.20)); }
+  body.inv .analog { filter: drop-shadow(0 18px 34px rgba(0,0,0,.22)); }
+  body.inv .stack {
+    background: repeating-linear-gradient(180deg, var(--edge) 0 1px, #f5f5f5 1px 3px);
+    box-shadow: 0 6px 10px rgba(0,0,0,.18);
+  }
+  body.inv .half.upper { background: linear-gradient(180deg, var(--card-top), #e8e8e8); }
+  body.inv .half.lower { background: linear-gradient(180deg, #f1f1f1, var(--card-bottom)); }
+  body.inv .flap.front { background: linear-gradient(180deg, var(--card-top), #e9e9e9); box-shadow: 0 3px 6px rgba(0,0,0,.18); }
+  body.inv .flap.back { background: linear-gradient(180deg, #e6e6e6, var(--card-bottom)); }
+  body.inv .half.upper::after, body.inv .flap.front::after { background: rgba(0,0,0,.22); }
+  body.inv .half.lower::before, body.inv .flap.back::before { background: rgba(0,0,0,.06); }
+  body.inv .roller {
+    background:
+      repeating-linear-gradient(180deg, rgba(0,0,0,.22) 0 1px, transparent 1px 5px),
+      linear-gradient(90deg, #ebebeb, #6f6f6f 40%, #b0b0b0 72%, #efefef);
+    box-shadow: 0 2px 6px rgba(0,0,0,.22), inset 0 0 0 1px rgba(0,0,0,.18);
+  }
+  body.inv .roller::after { background: #f3f3f3; box-shadow: 0 0 0 1px rgba(0,0,0,.28); }
+  body.inv .caption { color: rgba(0,0,0,.38); }
+  body.inv .tab::before { background: #c9c9c9; }
+  body.inv .tab:hover { color: #4b4b4b; }
+  body.inv #analogBezel stop:nth-child(1) { stop-color: #b5b5b5; }
+  body.inv #analogBezel stop:nth-child(2) { stop-color: #e5e5e5; }
+  body.inv #analogBezel stop:nth-child(3) { stop-color: #c5c5c5; }
+  body.inv #analogFace stop:nth-child(1) { stop-color: #d0d0d0; }
+  body.inv #analogFace stop:nth-child(2) { stop-color: #d8d8d8; }
+  body.inv #analogFace stop:nth-child(3) { stop-color: #e1e1e1; }
+  body.inv #analogFaceRing { stroke: #ececec; }
+  body.inv #analogTicks rect { fill: #272727; }
+  body.inv #analogArcLabel { fill: #272727; }
+  body.inv #handHour, body.inv #handMinute { fill: #272727; }
+  body.inv #dialBezel stop:nth-child(1) { stop-color: #b5b5b5; }
+  body.inv #dialBezel stop:nth-child(2) { stop-color: #e5e5e5; }
+  body.inv #dialBezel stop:nth-child(3) { stop-color: #c5c5c5; }
+  body.inv #dialFaceGrad stop:nth-child(1) { stop-color: #d0d0d0; }
+  body.inv #dialFaceGrad stop:nth-child(2) { stop-color: #d8d8d8; }
+  body.inv #dialFaceGrad stop:nth-child(3) { stop-color: #e1e1e1; }
+  body.inv #dialFace { stroke: #ececec; }
+  body.inv #sectorLip { stroke: #f2f2f2; }
+  body.inv #ticks line { stroke: #272727; }
+  body.inv #ticks text { fill: #272727; }
+  body.inv #knobHalo { fill: #2a2a2a; }
+  body.inv #knobFill stop:nth-child(1) { stop-color: #929292; }
+  body.inv #knobFill stop:nth-child(2) { stop-color: #d4d4d4; }
+  body.inv #knobFill stop:nth-child(3) { stop-color: #fafafa; }
+  body.inv #knob { stroke: #c4c4c4; }
+
   @media (max-width: 460px) {
     body { padding: 16px; }
     .clock-shell { padding: 18px 12px; }
@@ -392,6 +479,52 @@
     <div class="caption">AIRPORT SPLIT-FLAP STYLE BOARD</div>
   </section>
 
+  <section class="view hidden" id="analogView">
+    <div class="label-row">
+      <span>Tokyo Local Time</span>
+      <span class="status-light">Live</span>
+    </div>
+    <div class="analog-wrap">
+      <div class="analog" role="img" aria-label="アナログ時計">
+        <svg viewBox="0 0 200 200">
+          <defs>
+            <linearGradient id="analogBezel" x1="26%" y1="2%" x2="74%" y2="98%">
+              <stop offset="0%" stop-color="#4a4a4a"></stop>
+              <stop offset="46%" stop-color="#1a1a1a"></stop>
+              <stop offset="100%" stop-color="#3a3a3a"></stop>
+            </linearGradient>
+            <radialGradient id="analogFace" cx="38%" cy="26%" r="92%">
+              <stop offset="0%" stop-color="#2f2f2f"></stop>
+              <stop offset="62%" stop-color="#272727"></stop>
+              <stop offset="100%" stop-color="#1e1e1e"></stop>
+            </radialGradient>
+            <filter id="handShadow" x="-50%" y="-50%" width="200%" height="200%">
+              <feDropShadow dx="1.2" dy="2.4" stdDeviation="2.2" flood-color="#000000" flood-opacity=".75"></feDropShadow>
+            </filter>
+          </defs>
+          <circle cx="100" cy="100" r="98" fill="url(#analogBezel)"></circle>
+          <circle id="analogFaceRing" cx="100" cy="100" r="89.2" fill="url(#analogFace)" stroke="#141414" stroke-width="1.2"></circle>
+          <g id="analogTicks"></g>
+          <g id="analogArcLabel" font-family="'Helvetica Neue', Helvetica, Arial, 'Liberation Sans', sans-serif" fill="#e9e9e9">
+            <path id="analogArcText" d="M 18.7,129.6 A 86.5,86.5 0 0 0 181.3,129.6" fill="none"></path>
+            <text font-size="5.7" font-weight="500" letter-spacing=".5">
+              <textPath href="#analogArcText" startOffset="50%" text-anchor="middle">SLOWDOWN YOU’RE DOING FINE</textPath>
+            </text>
+          </g>
+          <g filter="url(#handShadow)">
+            <polygon id="handHour" points="95.2,110 104.8,110 103.4,54 96.6,54" fill="#e9e9e9"></polygon>
+            <polygon id="handMinute" points="95.2,112 104.8,112 103.4,20 96.6,20" fill="#e9e9e9"></polygon>
+            <g id="handSecond">
+              <rect x="98.9" y="38" width="2.2" height="80" fill="#be443c"></rect>
+              <circle cx="100" cy="44" r="8.6" fill="#be443c"></circle>
+            </g>
+            <circle cx="100" cy="100" r="4.4" fill="#be443c"></circle>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </section>
+
   <section class="view hidden" id="timerView">
     <div class="label-row">
       <span>Pomodoro Timer</span>
@@ -401,7 +534,7 @@
       <div class="dial" id="dial" role="img" aria-label="ポモドーロタイマーの文字盤">
         <svg viewBox="0 0 200 200">
           <defs>
-            <!-- 赤面：へこんで見えるような内側の影 -->
+            <!-- 赤面：へこんで���えるような内側の影 -->
             <radialGradient id="redSunk" cx="50%" cy="38%" r="72%">
               <stop offset="0%" stop-color="#B04E4E"></stop>
               <stop offset="62%" stop-color="#C05555"></stop>
@@ -424,16 +557,28 @@
               <stop offset="45%" stop-color="#2b2b2b"></stop>
               <stop offset="100%" stop-color="#050505"></stop>
             </radialGradient>
+            <!-- ベゼル・文字盤：アナログ時計と同じ厚み・色 -->
+            <linearGradient id="dialBezel" x1="26%" y1="2%" x2="74%" y2="98%">
+              <stop offset="0%" stop-color="#4a4a4a"></stop>
+              <stop offset="46%" stop-color="#1a1a1a"></stop>
+              <stop offset="100%" stop-color="#3a3a3a"></stop>
+            </linearGradient>
+            <radialGradient id="dialFaceGrad" cx="38%" cy="26%" r="92%">
+              <stop offset="0%" stop-color="#2f2f2f"></stop>
+              <stop offset="62%" stop-color="#272727"></stop>
+              <stop offset="100%" stop-color="#1e1e1e"></stop>
+            </radialGradient>
             <filter id="knobShadow" x="-80%" y="-80%" width="260%" height="260%">
               <feDropShadow dx="0" dy="2.6" stdDeviation="2.2" flood-color="#000000" flood-opacity=".55"></feDropShadow>
             </filter>
           </defs>
-          <circle cx="100" cy="100" r="97" fill="#ffffff"></circle>
+          <circle id="dialBezelRing" cx="100" cy="100" r="98" fill="url(#dialBezel)"></circle>
+          <circle id="dialFace" cx="100" cy="100" r="89.2" fill="url(#dialFaceGrad)" stroke="#141414" stroke-width="1.2"></circle>
           <path id="sector" fill="url(#redSunk)" filter="url(#innerShadow)" d=""></path>
           <path id="sectorLip" fill="none" stroke="#ffffff" stroke-opacity=".5" stroke-width="1.1" d="" pointer-events="none"></path>
           <g id="ticks"></g>
           <g filter="url(#knobShadow)">
-            <circle cx="100" cy="100" r="12" fill="#d8d8d8" opacity=".35"></circle>
+            <circle id="knobHalo" cx="100" cy="100" r="12" fill="#d8d8d8" opacity=".35"></circle>
             <circle id="knob" cx="100" cy="100" r="11" fill="url(#knobFill)" stroke="#000000" stroke-width=".6"></circle>
           </g>
         </svg>
@@ -445,8 +590,10 @@
   </section>
 
     <div class="tab-row">
-      <button type="button" class="tab active" data-view="clockView">Clock</button>
+      <button type="button" class="tab active" data-view="clockView">Flip</button>
+      <button type="button" class="tab" data-view="analogView">Analog</button>
       <button type="button" class="tab" data-view="timerView">Pomodoro</button>
+      <button type="button" class="tab" id="invBtn" aria-pressed="false" title="ブラック／ホワイト切替">Inv</button>
     </div>
   </main>
 <script>
@@ -544,8 +691,42 @@
     return '［ ' + eraYear + ' ］';
   }
 
+  /* ---------- analog clock ---------- */
+  (function buildAnalogTicks(){
+    const g = document.getElementById('analogTicks');
+    if (!g) return;
+    let svg = '';
+    for (let i = 0; i < 60; i++) {
+      const major = i % 5 === 0;
+      const w = major ? 6.1 : 2.2;
+      const h = major ? 21 : 6.3;
+      const yTop = 100 - 81;
+      svg += '<rect x="' + (100 - w / 2).toFixed(2) + '" y="' + yTop.toFixed(2) +
+             '" width="' + w + '" height="' + h + '" fill="#e9e9e9"' +
+             (major ? '' : ' fill-opacity=".9"') +
+             ' transform="rotate(' + (i * 6) + ' 100 100)"></rect>';
+    }
+    g.innerHTML = svg;
+  })();
+
+  const handHour = document.getElementById('handHour');
+  const handMinute = document.getElementById('handMinute');
+  const handSecond = document.getElementById('handSecond');
+
+  function paintAnalog(now) {
+    if (!handHour) return;
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: tz, hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit'
+    }).formatToParts(now).reduce(function(acc, p){ acc[p.type] = p.value; return acc; }, {});
+    const h = Number(parts.hour) % 12, m = Number(parts.minute), s = Number(parts.second);
+    handHour.setAttribute('transform', 'rotate(' + ((h + m / 60) * 30).toFixed(2) + ' 100 100)');
+    handMinute.setAttribute('transform', 'rotate(' + ((m + s / 60) * 6).toFixed(2) + ' 100 100)');
+    handSecond.setAttribute('transform', 'rotate(' + (s * 6).toFixed(2) + ' 100 100)');
+  }
+
   function update() {
     const now = new Date();
+    paintAnalog(now);
     apply(timeUnits, timeValues(now));
     apply(dateUnits, dateValues(now));
     paintWeekday(now);
@@ -557,16 +738,32 @@
   setInterval(update, 1000);
 
   /* ---------- view switch ---------- */
-  const tabs = Array.from(document.querySelectorAll('.tab'));
-  const views = { clockView: document.getElementById('clockView'), timerView: document.getElementById('timerView') };
+  const tabs = Array.from(document.querySelectorAll('.tab[data-view]'));
+  const views = {
+    clockView: document.getElementById('clockView'),
+    analogView: document.getElementById('analogView'),
+    timerView: document.getElementById('timerView')
+  };
+  const pomodoroTab = tabs.find(function(b){ return b.dataset.view === 'timerView'; });
   tabs.forEach(function(btn){
     btn.addEventListener('click', function(){
       tabs.forEach(function(b){ b.classList.toggle('active', b === btn); });
       Object.keys(views).forEach(function(k){
         views[k].classList.toggle('hidden', k !== btn.dataset.view);
       });
+      if (btn.dataset.view === 'timerView' && pomodoroTab) pomodoroTab.classList.remove('alarm');
     });
   });
+
+  /* ---------- black / white mode ---------- */
+  const invBtn = document.getElementById('invBtn');
+  if (invBtn) {
+    invBtn.addEventListener('click', function(){
+      const on = document.body.classList.toggle('inv');
+      invBtn.classList.toggle('active', on);
+      invBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  }
 
   /* ---------- pomodoro timer ---------- */
   const RED = '#CB5C5C';
@@ -577,7 +774,7 @@
   const knob = document.getElementById('knob');
   const readout = document.getElementById('readout');
   const stateEl = document.getElementById('timerState');
-  const R = 80;
+  const R = 67.7;
 
   // ticks + numbers (counterclockwise, like the reference timer)
   (function buildTicks(){
@@ -585,15 +782,15 @@
     for (let m = 0; m < 60; m++) {
       const rad = -m * 6 * Math.PI / 180;
       const major = m % 5 === 0;
-      const rOut = 77, rIn = major ? 66 : 71;
+      const rOut = 65.4, rIn = major ? 56.2 : 60.2;
       const x1 = 100 + rOut * Math.sin(rad), y1 = 100 - rOut * Math.cos(rad);
       const x2 = 100 + rIn * Math.sin(rad),  y2 = 100 - rIn * Math.cos(rad);
       svg += '<line x1="' + x1.toFixed(2) + '" y1="' + y1.toFixed(2) + '" x2="' + x2.toFixed(2) +
-             '" y2="' + y2.toFixed(2) + '" stroke="#4a4a4a" stroke-width="' + (major ? 2 : .8) + '"></line>';
+             '" y2="' + y2.toFixed(2) + '" stroke="#e9e9e9" stroke-opacity="' + (major ? 1 : .9) + '" stroke-width="' + (major ? 2 : .8) + '"></line>';
       if (major) {
-        const rt = 90;
+        const rt = 76;
         const tx = 100 + rt * Math.sin(rad), ty = 100 - rt * Math.cos(rad);
-        svg += '<text x="' + tx.toFixed(2) + '" y="' + ty.toFixed(2) + '" fill="#111111" font-size="14.4" ' +
+        svg += '<text x="' + tx.toFixed(2) + '" y="' + ty.toFixed(2) + '" fill="#e9e9e9" font-size="13.2" ' +
                'font-weight="700" text-anchor="middle" dominant-baseline="central" ' +
                'font-family="Helvetica Neue, Helvetica, Arial, sans-serif">' + m + '</text>';
       }
@@ -628,12 +825,15 @@
     const mm = String(Math.floor(s / 60)).padStart(2, '0');
     const ss = String(s % 60).padStart(2, '0');
     readout.textContent = mm + ':' + ss;
-    readout.style.color = running ? RED : '#ffffff';
+    readout.style.color = running ? RED : '';
     drawSector(remainSec);
     stateEl.textContent = running ? 'Running' : (remainSec <= 0 ? 'Finished' : 'Ready');
   }
 
-  function stopFlash() { dial.classList.remove('done'); }
+  function stopFlash() {
+    dial.classList.remove('done');
+    if (pomodoroTab) pomodoroTab.classList.remove('alarm');
+  }
 
   function startTimer() {
     if (remainSec <= 0) remainSec = totalSec;
@@ -655,6 +855,7 @@
       remainSec = 0;
       running = false;
       dial.classList.add('done');
+      if (pomodoroTab && views.timerView.classList.contains('hidden')) pomodoroTab.classList.add('alarm');
     }
     renderTimer();
   }
