@@ -7,7 +7,7 @@
 <style>
   :root {
     color-scheme: dark;
-    --bg: #000000;
+    --bg: #191919;
     --card: #141414;
     --card-top: #1e1e1e;
     --card-bottom: #101010;
@@ -33,12 +33,12 @@
   .clock-shell {
     width: min(760px, 100%);
     padding: clamp(18px, 4vw, 32px);
-    border: 1px solid rgba(255,255,255,.10);
+    border: 0;
     border-radius: 0;
     background:
       radial-gradient(circle at 50% 0%, rgba(217,177,92,.06), transparent 42%),
-      linear-gradient(180deg, #0d0d0d, #050505);
-    box-shadow: 0 20px 70px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.06);
+      var(--bg);
+    box-shadow: none;
   }
   .label-row {
     display: flex;
@@ -374,8 +374,8 @@
     border-color: rgba(0,0,0,.10);
     background:
       radial-gradient(circle at 50% 0%, rgba(217,177,92,.10), transparent 42%),
-      linear-gradient(180deg, #fbfbfb, #f1f1f1);
-    box-shadow: 0 20px 70px rgba(0,0,0,.14), inset 0 1px 0 rgba(0,0,0,.04);
+      var(--bg);
+    box-shadow: none;
   }
   body.inv .digit { filter: drop-shadow(0 14px 22px rgba(0,0,0,.18)); }
   body.inv .dial { filter: drop-shadow(0 18px 30px rgba(0,0,0,.20)); }
@@ -816,7 +816,7 @@
     const x = 100 - R * Math.sin(a), y = 100 - R * Math.cos(a);
     sector.setAttribute('d', 'M100,100 L100,' + (100 - R) + ' A' + R + ',' + R + ' 0 ' +
       (mins * 6 > 180 ? 1 : 0) + ',0 ' + x.toFixed(2) + ',' + y.toFixed(2) + ' Z');
-    // へこみの縁に入る光（影の反対側）
+    // へこみの�����に入る光（影の反対側）
     sectorLip.setAttribute('d', 'M100,100 L' + x.toFixed(2) + ',' + y.toFixed(2));
   }
 
