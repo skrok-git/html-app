@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Airport Flip Clock</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #000000;
+    --card: #141414;
+    --card-top: #1e1e1e;
+    --card-bottom: #101010;
+    --edge: #2e2e2e;
+    --text: #ffffff;
+    --muted: #9a958c;
+    --gold-dark: #8f6b18;
+    --gold-mid: #d4af37;
+    --gold-light: #fff1a8;
+    --line: rgba(255,255,255,.12);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body {
+    display: grid;
+    place-items: center;
+    min-height: 100vh;
+    padding: 24px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Helvetica Neue", Helvetica, Arial, "Liberation Sans", "Noto Sans JP", sans-serif;
+  }
+  .clock-shell {
+    width: min(760px, 100%);
+    padding: clamp(18px, 4vw, 32px);
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: 0;
+    background:
+      radial-gradient(circle at 50% 0%, rgba(217,177,92,.06), transparent 42%),
+      linear-gradient(180deg, #0d0d0d, #050505);
+    box-shadow: 0 20px 70px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.06);
+  }
+  .label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+    color: var(--muted);
+    letter-spacing: .18em;
+    font-size: clamp(11px, 2vw, 13px);
+    text-transform: uppercase;
+  }
+  .status-light { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+  .status-light::before {
+    content: "";
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 28%, var(--gold-light), var(--gold-mid) 42%, var(--gold-dark) 100%);
+    box-shadow: 0 0 14px rgba(255,215,104,.72), 0 0 2px rgba(255,246,190,.95);
+  }
+
+  /* ---------- view switch ---------- */
+  .view.hidden { display: none; }
+  .tab-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(18px, 3.6vw, 34px);
+    margin-top: clamp(18px, 3.6vw, 28px);
+    padding-top: clamp(14px, 2.6vw, 20px);
+    border-top: 1px solid var(--line);
+  }
+  .tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+    padding: 6px 4px;
+    border: 0;
+    background: none;
+    color: var(--muted);
+    font-family: inherit;
+    font-size: clamp(11px, 2vw, 13px);
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .tab::before {
+    content: "";
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #3a3a3a;
+    box-shadow: none;
+  }
+  .tab:hover { color: #cfc9bd; }
+  .tab.active { color: var(--text); }
+  .tab.active::before {
+    background: radial-gradient(circle at 35% 28%, var(--gold-light), var(--gold-mid) 42%, var(--gold-dark) 100%);
+    box-shadow: 0 0 14px rgba(255,215,104,.72), 0 0 2px rgba(255,246,190,.95);
+  }
+
+  /* ---------- pomodoro timer ---------- */
+  .timer-wrap { display: grid; justify-items: center; gap: clamp(14px, 2.8vw, 22px); }
+  .dial {
+    width: min(360px, 74vw);
+    aspect-ratio: 1 / 1;
+    touch-action: none;
+    user-select: none;
+    cursor: pointer;
+    filter: drop-shadow(0 18px 30px rgba(0,0,0,.6));
+  }
+  .dial svg { width: 100%; height: 100%; display: block; }
+  .dial.done { animation: dialFlash 1s steps(1, end) infinite; }
+  @keyframes dialFlash {
+    0%, 49%   { opacity: 1; }
+    50%, 100% { opacity: .18; }
+  }
+  .readout {
+    font-weight: 700;
+    font-size: clamp(30px, 8vw, 56px);
+    letter-spacing: -.01em;
+    font-variant-numeric: tabular-nums;
+  }
+  .timer-hint {
+    color: var(--muted);
+    font-size: clamp(10px, 1.9vw, 12px);
+    letter-spacing: .12em;
+    text-align: center;
+  }
+  .timer-state { color: var(--muted); letter-spacing: .2em; font-size: clamp(10px, 1.9vw, 12px); text-transform: uppercase; }
+
+  .board {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(20px, 3.6vw, 40px);
+  }
+  .date-board {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(15px, 3vw, 30px);   /* 年・月・日・曜日の間のスキマ */
+    margin-top: clamp(22px, 4.5vw, 34px);
+  }
+  .group {
+    display: flex;
+    align-items: center;
+    gap: clamp(4px, .9vw, 8px);  /* グループ内のフリップ間隔 */
+  }
+
+  /* ---------- split-flap digit ---------- */
+  .digit {
+    --w: clamp(58px, 15vw, 118px);
+    --h: clamp(88px, 22vw, 172px);
+    position: relative;
+    width: var(--w);
+    height: var(--h);
+    perspective: 900px;
+    filter: drop-shadow(0 14px 22px rgba(0,0,0,.6));
+  }
+  .date-board .digit {
+    --w: clamp(30px, 6.6vw, 56px);
+    --h: calc(var(--w) * 2.1);   /* 細く長いフリップ */
+  }
+  /* 細長カード用の縦長数字 */
+  .date-board .half .num, .date-board .flap .num {
+    font-size: calc(var(--w) * 1.04);
+    transform: scaleX(.92) scaleY(1.5);
+  }
+  .date-board .digit.cjk .num {
+    font-size: calc(var(--w) * .72);
+    letter-spacing: 0;
+    transform: none;
+  }
+  /* 日曜＝赤、土曜＝青 */
+  .date-board .digit.sun .num { color: #CB5C5C; }
+  .date-board .digit.sat .num { color: #628EC4; }
+  /* stacked cards waiting behind = thickness of the flap deck */
+  .stack {
+    position: absolute;
+    left: 3px; right: 3px;
+    top: 50%;
+    height: calc(50% + 6px);
+    background: repeating-linear-gradient(180deg, var(--edge) 0 1px, #0a0a0a 1px 3px);
+    box-shadow: 0 6px 10px rgba(0,0,0,.6);
+    transform: translateY(2px);
+    z-index: 0;
+  }
+  .half, .flap {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 50%;
+    overflow: hidden;
+    backface-visibility: hidden;
+  }
+  .half .num, .flap .num {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: var(--h);
+    display: grid;
+    place-items: center;
+    font-family: "Helvetica Neue", Helvetica, Arial, "Liberation Sans", "Noto Sans JP", sans-serif;
+    font-weight: 700;
+    font-size: calc(var(--h) * .82);
+    line-height: 1;
+    letter-spacing: -.02em;
+    color: var(--text);
+    transform: scaleX(1.06);
+    z-index: 1;
+  }
+  .digit.cjk .num { font-size: calc(var(--h) * .5); letter-spacing: 0; transform: none; }
+
+  .half { background: var(--card); z-index: 1; }
+  .half.upper { top: 0; background: linear-gradient(180deg, var(--card-top), #171717); }
+  .half.lower { top: 50%; background: linear-gradient(180deg, #0e0e0e, var(--card-bottom)); }
+  .half.upper .num { top: 0; }
+  .half.lower .num { top: calc(var(--h) * -.5); }
+
+  /* seam: 文字を分断しないヘアライン表現（厚みは出さない） */
+  .half.upper::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 1px;
+    z-index: 2;
+    background: rgba(0,0,0,.8);
+  }
+  .half.lower::before {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; top: 0;
+    height: 1px;
+    z-index: 2;
+    background: rgba(255,255,255,.1);
+  }
+
+  /* moving flaps */
+  .flap { z-index: 3; transform-style: preserve-3d; }
+  .flap.front {
+    top: 0;
+    transform-origin: 50% 100%;
+    background: linear-gradient(180deg, var(--card-top), #161616);
+    box-shadow: 0 3px 6px rgba(0,0,0,.6);
+  }
+  .flap.front .num { top: 0; }
+  .flap.front::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 1px;
+    z-index: 2;
+    background: rgba(0,0,0,.8);
+  }
+  .flap.back {
+    top: 50%;
+    transform-origin: 50% 0%;
+    transform: rotateX(90deg);
+    background: linear-gradient(180deg, #191919, var(--card-bottom));
+  }
+  .flap.back .num { top: calc(var(--h) * -.5); }
+  .flap.back::before {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; top: 0;
+    height: 1px;
+    z-index: 2;
+    background: rgba(255,255,255,.1);
+  }
+
+  .digit.flipping .flap.front { animation: flipFront .34s cubic-bezier(.35,.05,.6,.6) forwards; }
+  .digit.flipping .flap.back  { animation: flipBack .34s cubic-bezier(.4,.4,.65,.95) .34s forwards; }
+  @keyframes flipFront {
+    0%   { transform: rotateX(0deg);   filter: brightness(1); }
+    100% { transform: rotateX(-90deg); filter: brightness(.45); }
+  }
+  @keyframes flipBack {
+    0%   { transform: rotateX(90deg); filter: brightness(.45); }
+    100% { transform: rotateX(0deg);  filter: brightness(1); }
+  }
+
+  /* rollers / axle */
+  .roller {
+    position: absolute;
+    top: 50%;
+    width: calc(var(--w) * .095);
+    height: calc(var(--h) * .3);
+    transform: translateY(-50%);
+    z-index: 5;
+    background:
+      repeating-linear-gradient(180deg, rgba(0,0,0,.6) 0 1px, transparent 1px 5px),
+      linear-gradient(90deg, #141414, #8a8a8a 40%, #4a4a4a 72%, #101010);
+    box-shadow: 0 2px 6px rgba(0,0,0,.8), inset 0 0 0 1px rgba(0,0,0,.6);
+  }
+  .roller.left { left: calc(var(--w) * -.105); }
+  .roller.right { right: calc(var(--w) * -.105); }
+  .roller::after {
+    content: "";
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    background: #0c0c0c;
+    box-shadow: 0 0 0 1px rgba(255,255,255,.28);
+  }
+
+  .colon { display: grid; gap: clamp(10px, 3vw, 20px); transform: translateY(-2px); }
+  .colon span {
+    width: clamp(8px, 2vw, 14px);
+    height: clamp(8px, 2vw, 14px);
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 28%, var(--gold-light), var(--gold-mid) 44%, var(--gold-dark) 100%);
+    box-shadow: 0 0 22px rgba(255,215,104,.68), inset 0 1px 1px rgba(255,255,255,.72);
+    animation: slowBlink 2.6s ease-in-out infinite;
+  }
+  @keyframes slowBlink {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: .22; transform: scale(.86); }
+  }
+
+  .era {
+    margin-top: clamp(14px, 3vw, 20px);
+    text-align: center;
+    color: transparent;
+    background: linear-gradient(180deg, #fff7bf 0%, #e8c95a 38%, #b88a21 66%, #fff1a8 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    font-size: clamp(13px, 2.4vw, 18px);
+    font-weight: 700;
+    letter-spacing: .12em;
+  }
+  .caption {
+    margin-top: 10px;
+    color: rgba(255,255,255,.34);
+    text-align: center;
+    font-size: 12px;
+    letter-spacing: .12em;
+  }
+  @media (max-width: 460px) {
+    body { padding: 16px; }
+    .clock-shell { padding: 18px 12px; }
+    .label-row { margin-bottom: 12px; letter-spacing: .12em; }
+    .board { gap: 12px; }
+    .date-board { gap: 10px; }
+    .group { gap: 6px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .digit.flipping .flap.front,
+    .digit.flipping .flap.back { animation: none; }
+    .flap.back { transform: rotateX(0deg); }
+    .colon span { animation: none; }
+  }
+</style>
+</head>
+<body>
+  <main class="clock-shell" aria-label="空港の反転表示板風時計">
+  <section class="view" id="clockView">
+    <div class="label-row">
+      <span>Tokyo Local Time</span>
+      <span class="status-light">Live</span>
+    </div>
+    <section class="board" id="timeBoard" aria-label="現在時刻">
+      <div class="digit" data-time="0"></div>
+      <div class="digit" data-time="1"></div>
+      <div class="colon" aria-hidden="true"><span></span><span></span></div>
+      <div class="digit" data-time="2"></div>
+      <div class="digit" data-time="3"></div>
+    </section>
+    <section class="date-board" aria-label="今日の日付">
+      <div class="group">
+        <div class="digit" data-date="0"></div>
+        <div class="digit" data-date="1"></div>
+        <div class="digit" data-date="2"></div>
+        <div class="digit" data-date="3"></div>
+      </div>
+      <div class="group">
+        <div class="digit" data-date="4"></div>
+        <div class="digit" data-date="5"></div>
+      </div>
+      <div class="group">
+        <div class="digit" data-date="6"></div>
+        <div class="digit" data-date="7"></div>
+      </div>
+      <div class="group">
+        <div class="digit cjk" data-date="8"></div>
+      </div>
+    </section>
+    <div class="era" id="era">----</div>
+    <div class="caption">AIRPORT SPLIT-FLAP STYLE BOARD</div>
+  </section>
+
+  <section class="view hidden" id="timerView">
+    <div class="label-row">
+      <span>Pomodoro Timer</span>
+      <span class="timer-state" id="timerState">Ready</span>
+    </div>
+    <div class="timer-wrap">
+      <div class="dial" id="dial" role="img" aria-label="ポモドーロタイマーの文字盤">
+        <svg viewBox="0 0 200 200">
+          <defs>
+            <!-- 赤面：へこんで見えるような内側の影 -->
+            <radialGradient id="redSunk" cx="50%" cy="38%" r="72%">
+              <stop offset="0%" stop-color="#B04E4E"></stop>
+              <stop offset="62%" stop-color="#C05555"></stop>
+              <stop offset="100%" stop-color="#D97070"></stop>
+            </radialGradient>
+            <filter id="innerShadow" x="-30%" y="-30%" width="160%" height="160%">
+              <feOffset dx="1" dy="3.2" in="SourceAlpha" result="off"></feOffset>
+              <feGaussianBlur in="off" stdDeviation="3.6" result="offBlur"></feGaussianBlur>
+              <feComposite operator="out" in="SourceAlpha" in2="offBlur" result="inverse"></feComposite>
+              <feFlood flood-color="#2e0f0f" flood-opacity=".82" result="shadowColor"></feFlood>
+              <feComposite operator="in" in="shadowColor" in2="inverse" result="shadow"></feComposite>
+              <feMerge>
+                <feMergeNode in="SourceGraphic"></feMergeNode>
+                <feMergeNode in="shadow"></feMergeNode>
+              </feMerge>
+            </filter>
+            <!-- 中央ノブ：飛び出して見える立体感 -->
+            <radialGradient id="knobFill" cx="34%" cy="26%" r="82%">
+              <stop offset="0%" stop-color="#6d6d6d"></stop>
+              <stop offset="45%" stop-color="#2b2b2b"></stop>
+              <stop offset="100%" stop-color="#050505"></stop>
+            </radialGradient>
+            <filter id="knobShadow" x="-80%" y="-80%" width="260%" height="260%">
+              <feDropShadow dx="0" dy="2.6" stdDeviation="2.2" flood-color="#000000" flood-opacity=".55"></feDropShadow>
+            </filter>
+          </defs>
+          <circle cx="100" cy="100" r="97" fill="#ffffff"></circle>
+          <path id="sector" fill="url(#redSunk)" filter="url(#innerShadow)" d=""></path>
+          <path id="sectorLip" fill="none" stroke="#ffffff" stroke-opacity=".5" stroke-width="1.1" d="" pointer-events="none"></path>
+          <g id="ticks"></g>
+          <g filter="url(#knobShadow)">
+            <circle cx="100" cy="100" r="12" fill="#d8d8d8" opacity=".35"></circle>
+            <circle id="knob" cx="100" cy="100" r="11" fill="url(#knobFill)" stroke="#000000" stroke-width=".6"></circle>
+          </g>
+        </svg>
+      </div>
+      <div class="readout" id="readout">25:00</div>
+      <div class="timer-hint">文字盤をドラッグして時間を設定 ／ 中央のノブをクリックでスタート・一時停止</div>
+      <div class="caption">FOCUS 1 SET ・ NO AUTO BREAK</div>
+    </div>
+  </section>
+
+    <div class="tab-row">
+      <button type="button" class="tab active" data-view="clockView">Clock</button>
+      <button type="button" class="tab" data-view="timerView">Pomodoro</button>
+    </div>
+  </main>
+<script>
+(function(){
+  const tz = 'Asia/Tokyo';
+  const eraEl = document.getElementById('era');
+
+  function buildUnit(el) {
+    el.innerHTML =
+      '<div class="stack"></div>' +
+      '<div class="half upper"><div class="num">0</div></div>' +
+      '<div class="half lower"><div class="num">0</div></div>' +
+      '<div class="flap front"><div class="num">0</div></div>' +
+      '<div class="flap back"><div class="num">0</div></div>' +
+      '<div class="roller left"></div><div class="roller right"></div>';
+    return {
+      el: el,
+      upper: el.querySelector('.half.upper .num'),
+      lower: el.querySelector('.half.lower .num'),
+      front: el.querySelector('.flap.front .num'),
+      back: el.querySelector('.flap.back .num'),
+      value: ''
+    };
+  }
+
+  const timeUnits = Array.from(document.querySelectorAll('[data-time]')).map(buildUnit);
+  const dateUnits = Array.from(document.querySelectorAll('[data-date]')).map(buildUnit);
+
+  function setStatic(u, value) {
+    u.upper.textContent = value;
+    u.lower.textContent = value;
+    u.front.textContent = value;
+    u.back.textContent = value;
+  }
+
+  function flipTo(u, oldValue, newValue) {
+    u.upper.textContent = newValue;
+    u.lower.textContent = oldValue;
+    u.front.textContent = oldValue;
+    u.back.textContent = newValue;
+    u.el.classList.remove('flipping');
+    void u.el.offsetWidth;
+    u.el.classList.add('flipping');
+    setTimeout(function(){
+      u.el.classList.remove('flipping');
+      setStatic(u, newValue);
+    }, 700);
+  }
+
+  function apply(units, values) {
+    values.forEach(function(value, i){
+      const u = units[i];
+      if (!u) return;
+      if (u.value === '') {
+        setStatic(u, value);
+      } else if (u.value !== value) {
+        flipTo(u, u.value, value);
+      }
+      u.value = value;
+    });
+  }
+
+  function timeValues(now) {
+    return new Intl.DateTimeFormat('en-GB', {
+      timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false
+    }).format(now).replace(':','').split('');
+  }
+
+  function dateValues(now) {
+    const ymd = new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit'
+    }).format(now).split('-'); // [YYYY, MM, DD]
+    const weekday = new Intl.DateTimeFormat('ja-JP', {
+      timeZone: tz, weekday: 'narrow'
+    }).format(now); // 日/月/火...
+    return ymd[0].split('').concat(ymd[1].split(''), ymd[2].split(''), [weekday]);
+  }
+
+  function paintWeekday(now) {
+    const u = dateUnits[dateUnits.length - 1];
+    if (!u) return;
+    const en = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz, weekday: 'short'
+    }).format(now);
+    u.el.classList.toggle('sun', en === 'Sun');
+    u.el.classList.toggle('sat', en === 'Sat');
+  }
+
+  function eraText(now) {
+    const eraYear = new Intl.DateTimeFormat('ja-JP-u-ca-japanese', {
+      timeZone: tz, era: 'long', year: 'numeric'
+    }).format(now).replace(/[0-9]/g, function(n){
+      return String.fromCharCode(n.charCodeAt(0) + 0xFEE0);
+    });
+    return '［ ' + eraYear + ' ］';
+  }
+
+  function update() {
+    const now = new Date();
+    apply(timeUnits, timeValues(now));
+    apply(dateUnits, dateValues(now));
+    paintWeekday(now);
+    const t = eraText(now);
+    if (eraEl.textContent !== t) eraEl.textContent = t;
+  }
+
+  update();
+  setInterval(update, 1000);
+
+  /* ---------- view switch ---------- */
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  const views = { clockView: document.getElementById('clockView'), timerView: document.getElementById('timerView') };
+  tabs.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      tabs.forEach(function(b){ b.classList.toggle('active', b === btn); });
+      Object.keys(views).forEach(function(k){
+        views[k].classList.toggle('hidden', k !== btn.dataset.view);
+      });
+    });
+  });
+
+  /* ---------- pomodoro timer ---------- */
+  const RED = '#CB5C5C';
+  const dial = document.getElementById('dial');
+  const sector = document.getElementById('sector');
+  const sectorLip = document.getElementById('sectorLip');
+  const ticksG = document.getElementById('ticks');
+  const knob = document.getElementById('knob');
+  const readout = document.getElementById('readout');
+  const stateEl = document.getElementById('timerState');
+  const R = 80;
+
+  // ticks + numbers (counterclockwise, like the reference timer)
+  (function buildTicks(){
+    let svg = '';
+    for (let m = 0; m < 60; m++) {
+      const rad = -m * 6 * Math.PI / 180;
+      const major = m % 5 === 0;
+      const rOut = 77, rIn = major ? 66 : 71;
+      const x1 = 100 + rOut * Math.sin(rad), y1 = 100 - rOut * Math.cos(rad);
+      const x2 = 100 + rIn * Math.sin(rad),  y2 = 100 - rIn * Math.cos(rad);
+      svg += '<line x1="' + x1.toFixed(2) + '" y1="' + y1.toFixed(2) + '" x2="' + x2.toFixed(2) +
+             '" y2="' + y2.toFixed(2) + '" stroke="#4a4a4a" stroke-width="' + (major ? 2 : .8) + '"></line>';
+      if (major) {
+        const rt = 90;
+        const tx = 100 + rt * Math.sin(rad), ty = 100 - rt * Math.cos(rad);
+        svg += '<text x="' + tx.toFixed(2) + '" y="' + ty.toFixed(2) + '" fill="#111111" font-size="14.4" ' +
+               'font-weight="700" text-anchor="middle" dominant-baseline="central" ' +
+               'font-family="Helvetica Neue, Helvetica, Arial, sans-serif">' + m + '</text>';
+      }
+    }
+    ticksG.innerHTML = svg;
+  })();
+
+  let totalSec = 25 * 60;
+  let remainSec = totalSec;
+  let running = false;
+  let endAt = 0;
+  let dragging = false;
+
+  function drawSector(sec) {
+    const mins = Math.max(0, Math.min(60, sec / 60));
+    if (mins <= 0) { sector.setAttribute('d', ''); sectorLip.setAttribute('d', ''); return; }
+    if (mins >= 59.999) {
+      sector.setAttribute('d', 'M100,' + (100 - R) + ' A' + R + ',' + R + ' 0 1,0 100,' + (100 + R) +
+        ' A' + R + ',' + R + ' 0 1,0 100,' + (100 - R) + ' Z');
+      return;
+    }
+    const a = mins * 6 * Math.PI / 180;
+    const x = 100 - R * Math.sin(a), y = 100 - R * Math.cos(a);
+    sector.setAttribute('d', 'M100,100 L100,' + (100 - R) + ' A' + R + ',' + R + ' 0 ' +
+      (mins * 6 > 180 ? 1 : 0) + ',0 ' + x.toFixed(2) + ',' + y.toFixed(2) + ' Z');
+    // へこみの縁に入る光（影の反対側）
+    sectorLip.setAttribute('d', 'M100,100 L' + x.toFixed(2) + ',' + y.toFixed(2));
+  }
+
+  function renderTimer() {
+    const s = Math.max(0, Math.ceil(remainSec));
+    const mm = String(Math.floor(s / 60)).padStart(2, '0');
+    const ss = String(s % 60).padStart(2, '0');
+    readout.textContent = mm + ':' + ss;
+    readout.style.color = running ? RED : '#ffffff';
+    drawSector(remainSec);
+    stateEl.textContent = running ? 'Running' : (remainSec <= 0 ? 'Finished' : 'Ready');
+  }
+
+  function stopFlash() { dial.classList.remove('done'); }
+
+  function startTimer() {
+    if (remainSec <= 0) remainSec = totalSec;
+    running = true;
+    endAt = Date.now() + remainSec * 1000;
+    stopFlash();
+    renderTimer();
+  }
+
+  function pauseTimer() {
+    running = false;
+    renderTimer();
+  }
+
+  function tickTimer() {
+    if (!running) return;
+    remainSec = (endAt - Date.now()) / 1000;
+    if (remainSec <= 0) {
+      remainSec = 0;
+      running = false;
+      dial.classList.add('done');
+    }
+    renderTimer();
+  }
+
+  function minutesFromPoint(ev) {
+    const rect = dial.getBoundingClientRect();
+    const dx = ev.clientX - (rect.left + rect.width / 2);
+    const dy = ev.clientY - (rect.top + rect.height / 2);
+    let deg = Math.atan2(-dx, -dy) * 180 / Math.PI; // counterclockwise from top
+    if (deg < 0) deg += 360;
+    let mins = Math.round(deg / 6);
+    if (mins <= 0) mins = 60;
+    return Math.min(60, mins);
+  }
+
+  function setFromPoint(ev) {
+    const mins = minutesFromPoint(ev);
+    totalSec = mins * 60;
+    remainSec = totalSec;
+    running = false;
+    stopFlash();
+    renderTimer();
+  }
+
+  knob.addEventListener('pointerdown', function(ev){
+    ev.stopPropagation();
+    ev.preventDefault();
+    if (dial.classList.contains('done')) { stopFlash(); remainSec = totalSec; renderTimer(); return; }
+    if (running) pauseTimer(); else startTimer();
+  });
+
+  dial.addEventListener('pointerdown', function(ev){
+    if (dial.classList.contains('done')) { stopFlash(); remainSec = totalSec; renderTimer(); return; }
+    dragging = true;
+    dial.setPointerCapture && dial.setPointerCapture(ev.pointerId);
+    setFromPoint(ev);
+  });
+  dial.addEventListener('pointermove', function(ev){ if (dragging) setFromPoint(ev); });
+  dial.addEventListener('pointerup', function(){ dragging = false; });
+  dial.addEventListener('pointercancel', function(){ dragging = false; });
+
+  renderTimer();
+  setInterval(tickTimer, 200);
+})();
+</script>
+</body>
+</html>
