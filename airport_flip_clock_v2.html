@@ -10,7 +10,8 @@
     --text:#e9e9e9;
     --muted:#7d7d7d;
     --red:#be443c;
-    --blue:#4a86d8;
+    --blue:#628EC4;
+    --sun:#CB5C5C;
     --gold:#c9a24a;
     --gold-hi:#f1d58a;
     --bz1:#4a4a4a; --bz2:#1a1a1a; --bz3:#3a3a3a;
@@ -19,11 +20,11 @@
     --mark:#e9e9e9;
   }
   body.inv{
+    --bz1:#b5b5b5; --bz2:#e5e5e5; --bz3:#c5c5c5;
+    --fc1:#d0d0d0; --fc2:#d8d8d8; --fc3:#e1e1e1;
     --bg:#ffffff;
     --text:#272727;
     --muted:#8a8a8a;
-    --bz1:#d6d6d6; --bz2:#f7f7f7; --bz3:#c6c6c6;
-    --fc1:#f4f4f4; --fc2:#e9e9e9; --fc3:#dedede;
     --card1:#f2f2f2; --card2:#e2e2e2;
     --mark:#272727;
   }
@@ -61,12 +62,15 @@
     width:calc(var(--u)*43);height:calc(var(--u)*25);position:relative;z-index:1;
     border-radius:calc(var(--u)*6.2);
     padding:calc(var(--u)*1.12);
-    background:linear-gradient(180deg,var(--bz1),var(--bz2) 50%,var(--bz3));
-    box-shadow:0 calc(var(--u)*.5) calc(var(--u)*1.2) rgba(0,0,0,.35);
+    background:linear-gradient(160deg,var(--bz1) 2%,var(--bz2) 46%,var(--bz3) 98%);
+    box-shadow:0 calc(var(--u)*1.25) calc(var(--u)*2.08) rgba(0,0,0,.6),inset 0 0 0 0 transparent;
   }
+  body.inv .flipface{box-shadow:0 0 0 calc(var(--u)*.15) #ececec}
+  body.inv .flipbox{box-shadow:0 calc(var(--u)*1.25) calc(var(--u)*2.08) rgba(0,0,0,.2)}
   .flipface{
     width:100%;height:100%;border-radius:calc(var(--u)*5.1);
-    background:linear-gradient(180deg,var(--fc1),var(--fc2) 50%,var(--fc3));
+    background:radial-gradient(120% 160% at 38% 26%,var(--fc1),var(--fc2) 62%,var(--fc3));
+    box-shadow:0 0 0 calc(var(--u)*.15) #141414;
     display:flex;flex-direction:column;align-items:center;justify-content:center;
     gap:calc(var(--u)*1.25);position:relative;overflow:hidden;
   }
@@ -75,24 +79,23 @@
     color:var(--muted);text-transform:uppercase;display:flex;align-items:center;gap:.8em;
     margin-right:-.34em; /* 末尾の字間ぶんを相殺して見た目の中心を正す */
   }
-  .label i{width:calc(var(--u)*.7);height:calc(var(--u)*.7);border-radius:50%;background:var(--red);display:inline-block}
   .time{display:flex;align-items:flex-end;gap:calc(var(--u)*.45)}
   .grp{display:flex;gap:calc(var(--u)*.4)}
   .colon{display:flex;flex-direction:column;justify-content:center;gap:calc(var(--u)*1.7);
-         height:calc(var(--u)*9);padding:0 calc(var(--u)*.35)}
-  .colon span{width:calc(var(--u)*.9);height:calc(var(--u)*.9);border-radius:50%;background:var(--red);
+         height:calc(var(--u)*10.2);padding:0 calc(var(--u)*.5)}
+  .colon span{width:calc(var(--u)*1);height:calc(var(--u)*1);border-radius:50%;
+              background:radial-gradient(circle at 35% 28%,#fff1a8,#d4af37 42%,#8f6b18 100%);
+              box-shadow:0 0 calc(var(--u)*1) rgba(255,215,104,.72),0 0 calc(var(--u)*.15) rgba(255,246,190,.95);
               animation:slowBlink 3.033s ease-in-out infinite}
-  .sec{margin-left:calc(var(--u)*.6)}
 
   /* ----- フラップ ----- */
-  .flap{--w:calc(var(--u)*5.8);--h:calc(var(--u)*9);--fs:calc(var(--u)*7.6);
+  .flap{--w:calc(var(--u)*6.6);--h:calc(var(--u)*10.2);--fs:calc(var(--u)*8.6);
         width:var(--w);height:var(--h);position:relative;perspective:calc(var(--u)*40);
         font-weight:700;font-size:var(--fs);color:var(--text);font-variant-numeric:tabular-nums}
-  .flap.s{--w:calc(var(--u)*3.4);--h:calc(var(--u)*5.3);--fs:calc(var(--u)*4.4)}
   .flap.d{--w:calc(var(--u)*2.3);--h:calc(var(--u)*3.3);--fs:calc(var(--u)*2.4);font-weight:600}
   .flap.d.k{--w:calc(var(--u)*3.3);--fs:calc(var(--u)*2.1)}
   .flap.sat{color:var(--blue)} /* 土曜＝青 */
-  .flap.sun{color:var(--red)}  /* 日曜＝赤 */
+  .flap.sun{color:var(--sun)}  /* 日曜＝赤 */
   .half{position:absolute;left:0;right:0;height:50%;overflow:hidden;
         background:linear-gradient(180deg,var(--card1),var(--card2));backface-visibility:hidden}
   .half span{position:absolute;left:0;right:0;height:var(--h);line-height:var(--h);text-align:center}
@@ -115,25 +118,26 @@
 
   .date{display:flex;align-items:center;gap:calc(var(--u)*.3)}
   .date .sep{width:calc(var(--u)*.5)}
-  .era{font-size:calc(var(--u)*1.05);letter-spacing:.2em;color:var(--muted);margin-left:calc(var(--u)*.9)}
+  .datebox{display:flex;flex-direction:column;align-items:center;gap:calc(var(--u)*.7)}
+  .era{font-size:calc(var(--u)*1.05);letter-spacing:.2em;color:var(--muted);margin-right:-.2em}
 
   /* ===== キャプション（3つ共通の書式） ===== */
-  .caps{display:flex;justify-content:center;margin-top:calc(var(--u)*1.6)}
+  .caps{display:flex;justify-content:center;margin-top:calc(var(--u)*1.2)}
   .cap{font-size:calc(var(--u)*1.05);letter-spacing:.34em;font-weight:600;color:var(--muted);
        text-transform:uppercase;text-align:center;display:flex;justify-content:center;align-items:center;gap:.7em}
   .cap.c1,.cap.c3{width:calc(var(--u)*25)}
   .cap.c2{width:calc(var(--u)*43);margin:0 calc(var(--u)*1.5)}
   .cap b{color:var(--text);font-weight:700;letter-spacing:.12em;font-variant-numeric:tabular-nums}
+  .readout{font-size:calc(var(--u)*3.9);font-weight:700;letter-spacing:-.01em;color:var(--text);
+           font-variant-numeric:tabular-nums;text-transform:none}
+  .readout.run{color:#CB5C5C}
+  .readout.done{animation:goldPulse 2.8s ease-in-out infinite}
   .cap .dot{width:calc(var(--u)*.7);height:calc(var(--u)*.7);border-radius:50%;background:#555;display:inline-block}
   .cap .dot.on{background:radial-gradient(circle at 35% 35%,var(--gold-hi),var(--gold));
                box-shadow:0 0 calc(var(--u)*.8) rgba(201,162,74,.7)}
   .cap .dot.alarm{animation:goldPulse 2.8s ease-in-out infinite}
 
   /* ===== ポモドーロ ===== */
-  #pomo{cursor:pointer;touch-action:none}
-  #knob{cursor:pointer}
-  #pomo.done #pFace{animation:dialFlash 1.167s ease-in-out infinite}
-  @keyframes dialFlash{50%{filter:brightness(1.9)}}
   @keyframes slowBlink{0%,100%{opacity:1}50%{opacity:.25}}
   @keyframes goldPulse{0%,100%{opacity:1}50%{opacity:.2}}
 
@@ -148,8 +152,35 @@
   }
   .mcap{display:none;margin:calc(var(--u)*.9) 0 calc(var(--u)*.4)}
   @media (prefers-reduced-motion:reduce){
-    .colon span,.cap .dot.alarm,#pomo.done #pFace{animation:none}
+    .colon span,.readout.done,.dial.done{animation:none}
   }
+
+  /* ===== ver1と同じ陰影（文字盤360px基準の値を u に換算） ===== */
+  .dialbox.analog{filter:drop-shadow(0 calc(var(--u)*1.32) calc(var(--u)*2.5) rgba(0,0,0,.65))}
+  .dialbox.dial{filter:drop-shadow(0 calc(var(--u)*1.25) calc(var(--u)*2.08) rgba(0,0,0,.6));touch-action:none;user-select:none;cursor:pointer}
+  body.inv .dialbox.analog{filter:drop-shadow(0 calc(var(--u)*1.32) calc(var(--u)*2.5) rgba(0,0,0,.22))}
+  body.inv .dialbox.dial{filter:drop-shadow(0 calc(var(--u)*1.25) calc(var(--u)*2.08) rgba(0,0,0,.20))}
+  .dial.done{animation:dialFlash 1.167s steps(1,end) infinite}
+  @keyframes dialFlash{0%,49%{opacity:1}50%,100%{opacity:.18}}
+  #knob{cursor:pointer}
+  body.inv #analogBezel stop:nth-child(1),body.inv #dialBezel stop:nth-child(1){stop-color:#b5b5b5}
+  body.inv #analogBezel stop:nth-child(2),body.inv #dialBezel stop:nth-child(2){stop-color:#e5e5e5}
+  body.inv #analogBezel stop:nth-child(3),body.inv #dialBezel stop:nth-child(3){stop-color:#c5c5c5}
+  body.inv #analogFace stop:nth-child(1),body.inv #dialFaceGrad stop:nth-child(1){stop-color:#d0d0d0}
+  body.inv #analogFace stop:nth-child(2),body.inv #dialFaceGrad stop:nth-child(2){stop-color:#d8d8d8}
+  body.inv #analogFace stop:nth-child(3),body.inv #dialFaceGrad stop:nth-child(3){stop-color:#e1e1e1}
+  body.inv #analogFaceRing,body.inv #dialFace{stroke:#ececec}
+  body.inv #analogTicks rect{fill:#272727}
+  body.inv #analogArcLabel{fill:#272727}
+  body.inv #handHour,body.inv #handMinute{fill:#272727}
+  body.inv #sectorLip{stroke:#f2f2f2}
+  body.inv #ticks line{stroke:#272727}
+  body.inv #ticks text{fill:#272727}
+  body.inv #knobHalo{fill:#2a2a2a}
+  body.inv #knobFill stop:nth-child(1){stop-color:#929292}
+  body.inv #knobFill stop:nth-child(2){stop-color:#d4d4d4}
+  body.inv #knobFill stop:nth-child(3){stop-color:#fafafa}
+  body.inv #knob{stroke:#c4c4c4}
 </style>
 </head>
 <body>
@@ -157,36 +188,42 @@
  <div class="tri">
   <div class="row">
     <!-- ANALOG -->
-    <div class="dialbox">
-      <svg viewBox="0 0 200 200" aria-label="アナログ時計">
-        <defs>
-          <linearGradient id="gBz" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" style="stop-color:var(--bz1)"/><stop offset=".5" style="stop-color:var(--bz2)"/><stop offset="1" style="stop-color:var(--bz3)"/>
-          </linearGradient>
-          <linearGradient id="gFc" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" style="stop-color:var(--fc1)"/><stop offset=".5" style="stop-color:var(--fc2)"/><stop offset="1" style="stop-color:var(--fc3)"/>
-          </linearGradient>
-          <filter id="handShadow" x="-50%" y="-50%" width="200%" height="200%">
-            <feDropShadow dx="1.2" dy="2.4" stdDeviation="2.2" flood-opacity=".75"/>
-          </filter>
-          <path id="arc" d="M 18.7,129.6 A 86.5,86.5 0 0 0 181.3,129.6"/>
-        </defs>
-        <circle cx="100" cy="100" r="98" fill="url(#gBz)"/>
-        <circle cx="100" cy="100" r="89.2" fill="url(#gFc)"/>
-        <g id="aTicks"></g>
-        <text font-size="5.7" letter-spacing=".5" font-weight="600" style="fill:var(--muted)">
-          <textPath href="#arc" startOffset="50%" text-anchor="middle">SLOWDOWN YOU’RE DOING FINE</textPath>
-        </text>
-        <g filter="url(#handShadow)">
-          <polygon id="hH" points="95.2,124 104.8,124 103.9,54 96.1,54" style="fill:var(--mark)"/>
-          <polygon id="hM" points="95.2,124 104.8,124 103.9,20 96.1,20" style="fill:var(--mark)"/>
-          <g id="hS" fill="#be443c">
-            <rect x="98.9" y="44" width="2.2" height="80"/>
-            <circle cx="100" cy="44" r="8.6"/>
+    <div class="dialbox analog" role="img" aria-label="アナログ時計">
+        <svg viewBox="0 0 200 200">
+          <defs>
+            <linearGradient id="analogBezel" x1="26%" y1="2%" x2="74%" y2="98%">
+              <stop offset="0%" stop-color="#4a4a4a"></stop>
+              <stop offset="46%" stop-color="#1a1a1a"></stop>
+              <stop offset="100%" stop-color="#3a3a3a"></stop>
+            </linearGradient>
+            <radialGradient id="analogFace" cx="38%" cy="26%" r="92%">
+              <stop offset="0%" stop-color="#2f2f2f"></stop>
+              <stop offset="62%" stop-color="#272727"></stop>
+              <stop offset="100%" stop-color="#1e1e1e"></stop>
+            </radialGradient>
+            <filter id="handShadow" x="-50%" y="-50%" width="200%" height="200%">
+              <feDropShadow dx="1.2" dy="2.4" stdDeviation="2.2" flood-color="#000000" flood-opacity=".75"></feDropShadow>
+            </filter>
+          </defs>
+          <circle cx="100" cy="100" r="98" fill="url(#analogBezel)"></circle>
+          <circle id="analogFaceRing" cx="100" cy="100" r="89.2" fill="url(#analogFace)" stroke="#141414" stroke-width="1.2"></circle>
+          <g id="analogTicks"></g>
+          <g id="analogArcLabel" font-family="'Helvetica Neue', Helvetica, Arial, 'Liberation Sans', sans-serif" fill="#e9e9e9">
+            <path id="analogArcText" d="M 18.7,129.6 A 86.5,86.5 0 0 0 181.3,129.6" fill="none"></path>
+            <text font-size="5.7" font-weight="500" letter-spacing=".5">
+              <textPath href="#analogArcText" startOffset="50%" text-anchor="middle">SLOWDOWN YOU’RE DOING FINE</textPath>
+            </text>
           </g>
-        </g>
-        <circle cx="100" cy="100" r="4.4" fill="#be443c"/>
-      </svg>
+          <g filter="url(#handShadow)">
+            <polygon id="handHour" points="95.2,110 104.8,110 103.4,54 96.6,54" fill="#e9e9e9"></polygon>
+            <polygon id="handMinute" points="95.2,112 104.8,112 103.4,20 96.6,20" fill="#e9e9e9"></polygon>
+            <g id="handSecond">
+              <rect x="98.9" y="38" width="2.2" height="80" fill="#be443c"></rect>
+              <circle cx="100" cy="44" r="8.6" fill="#be443c"></circle>
+            </g>
+            <circle cx="100" cy="100" r="4.4" fill="#be443c"></circle>
+          </g>
+        </svg>
     </div>
     <div class="mcap cap" id="m1"></div>
 
@@ -195,18 +232,19 @@
     <!-- FLIP -->
     <div class="flipbox">
       <div class="flipface">
-        <div class="label" id="tzLabel"><i></i>Tokyo Local Time</div>
+        <div class="label" id="tzLabel">Tokyo Local Time</div>
         <div class="time">
           <div class="grp" id="gH"></div>
           <div class="colon" id="colon"><span></span><span></span></div>
           <div class="grp" id="gM"></div>
-          <div class="grp sec" id="gS"></div>
         </div>
-        <div class="date">
-          <div class="grp" id="gY"></div><div class="sep"></div>
-          <div class="grp" id="gMo"></div><div class="sep"></div>
-          <div class="grp" id="gD"></div><div class="sep"></div>
-          <div class="grp" id="gW"></div>
+        <div class="datebox">
+          <div class="date">
+            <div class="grp" id="gY"></div><div class="sep"></div>
+            <div class="grp" id="gMo"></div><div class="sep"></div>
+            <div class="grp" id="gD"></div><div class="sep"></div>
+            <div class="grp" id="gW"></div>
+          </div>
           <div class="era" id="era"></div>
         </div>
       </div>
@@ -216,28 +254,57 @@
     <div class="bridge"></div>
 
     <!-- POMODORO -->
-    <div class="dialbox">
-      <svg id="pomo" viewBox="0 0 200 200" aria-label="ポモドーロタイマー">
-        <defs>
-          <radialGradient id="gKnob" cx=".38" cy=".32" r=".8">
-            <stop offset="0" style="stop-color:var(--bz1)"/><stop offset="1" style="stop-color:var(--bz2)"/>
-          </radialGradient>
-          <filter id="knobShadow" x="-50%" y="-50%" width="200%" height="200%">
-            <feDropShadow dx="1.2" dy="2.4" stdDeviation="2.2" flood-opacity=".75"/>
-          </filter>
-        </defs>
-        <circle cx="100" cy="100" r="98" fill="url(#gBz)"/>
-        <circle id="pFace" cx="100" cy="100" r="89.2" fill="url(#gFc)"/>
-        <path id="sector" fill="#be443c" fill-opacity=".92"/>
-        <g id="pTicks"></g>
-        <g id="pNums" font-size="8.6" font-weight="700" text-anchor="middle" dominant-baseline="central" style="fill:var(--mark)"></g>
-        <g id="knob" filter="url(#knobShadow)">
-          <circle cx="100" cy="100" r="15" fill="url(#gKnob)"/>
-          <circle cx="100" cy="100" r="15" fill="none" style="stroke:var(--bz3)" stroke-width="1"/>
-          <g id="kPlay" style="fill:var(--mark)"><polygon points="96,93 96,107 107,100"/></g>
-          <g id="kPause" style="fill:var(--mark);display:none"><rect x="94.5" y="93" width="3.8" height="14"/><rect x="101.7" y="93" width="3.8" height="14"/></g>
-        </g>
-      </svg>
+    <div class="dialbox dial" id="dial" role="img" aria-label="ポモドーロタイマー">
+        <svg viewBox="0 0 200 200">
+          <defs>
+            <!-- 赤面：へこんで���えるような内側の影 -->
+            <radialGradient id="redSunk" cx="50%" cy="38%" r="72%">
+              <stop offset="0%" stop-color="#B04E4E"></stop>
+              <stop offset="62%" stop-color="#C05555"></stop>
+              <stop offset="100%" stop-color="#D97070"></stop>
+            </radialGradient>
+            <filter id="innerShadow" x="-30%" y="-30%" width="160%" height="160%">
+              <feOffset dx="1" dy="3.2" in="SourceAlpha" result="off"></feOffset>
+              <feGaussianBlur in="off" stdDeviation="3.6" result="offBlur"></feGaussianBlur>
+              <feComposite operator="out" in="SourceAlpha" in2="offBlur" result="inverse"></feComposite>
+              <feFlood flood-color="#2e0f0f" flood-opacity=".82" result="shadowColor"></feFlood>
+              <feComposite operator="in" in="shadowColor" in2="inverse" result="shadow"></feComposite>
+              <feMerge>
+                <feMergeNode in="SourceGraphic"></feMergeNode>
+                <feMergeNode in="shadow"></feMergeNode>
+              </feMerge>
+            </filter>
+            <!-- 中央ノブ：飛び出して見える立体感 -->
+            <radialGradient id="knobFill" cx="34%" cy="26%" r="82%">
+              <stop offset="0%" stop-color="#6d6d6d"></stop>
+              <stop offset="45%" stop-color="#2b2b2b"></stop>
+              <stop offset="100%" stop-color="#050505"></stop>
+            </radialGradient>
+            <!-- ベゼル・文字盤：アナログ時計と同じ厚み・色 -->
+            <linearGradient id="dialBezel" x1="26%" y1="2%" x2="74%" y2="98%">
+              <stop offset="0%" stop-color="#4a4a4a"></stop>
+              <stop offset="46%" stop-color="#1a1a1a"></stop>
+              <stop offset="100%" stop-color="#3a3a3a"></stop>
+            </linearGradient>
+            <radialGradient id="dialFaceGrad" cx="38%" cy="26%" r="92%">
+              <stop offset="0%" stop-color="#2f2f2f"></stop>
+              <stop offset="62%" stop-color="#272727"></stop>
+              <stop offset="100%" stop-color="#1e1e1e"></stop>
+            </radialGradient>
+            <filter id="knobShadow" x="-80%" y="-80%" width="260%" height="260%">
+              <feDropShadow dx="0" dy="2.6" stdDeviation="2.2" flood-color="#000000" flood-opacity=".55"></feDropShadow>
+            </filter>
+          </defs>
+          <circle id="dialBezelRing" cx="100" cy="100" r="98" fill="url(#dialBezel)"></circle>
+          <circle id="dialFace" cx="100" cy="100" r="89.2" fill="url(#dialFaceGrad)" stroke="#141414" stroke-width="1.2"></circle>
+          <path id="sector" fill="url(#redSunk)" filter="url(#innerShadow)" d=""></path>
+          <path id="sectorLip" fill="none" stroke="#ffffff" stroke-opacity=".5" stroke-width="1.1" d="" pointer-events="none"></path>
+          <g id="ticks"></g>
+          <g filter="url(#knobShadow)">
+            <circle id="knobHalo" cx="100" cy="100" r="12" fill="#d8d8d8" opacity=".35"></circle>
+            <circle id="knob" cx="100" cy="100" r="11" fill="url(#knobFill)" stroke="#000000" stroke-width=".6"></circle>
+          </g>
+        </svg>
     </div>
     <div class="mcap cap" id="m3"></div>
   </div>
@@ -278,7 +345,7 @@
     f._v = ch;
   }
   const mk = (id, n, cls) => Array.from({length:n}, () => makeFlap(document.getElementById(id), cls, '0'));
-  const F = { H:mk('gH',2,''), M:mk('gM',2,''), S:mk('gS',2,'s'),
+  const F = { H:mk('gH',2,''), M:mk('gM',2,''),
               Y:mk('gY',4,'d'), Mo:mk('gMo',2,'d'), D:mk('gD',2,'d'), W:mk('gW',1,'d k') };
   const put = (arr, str) => arr.forEach((f,i) => setFlap(f, str[i]));
 
@@ -287,21 +354,22 @@
   const WJ = {Sun:'日',Mon:'月',Tue:'火',Wed:'水',Thu:'木',Fri:'金',Sat:'土'};
   function parts(d){ const o={}; fmt.formatToParts(d).forEach(p => o[p.type]=p.value); return o; }
 
-  /* ---------- アナログ目盛 ---------- */
-  const aT = document.getElementById('aTicks');
-  for (let i=0;i<60;i++){
-    const major = i%5===0, w = major?6.1:2.2, l = major?21:6.3;
-    const r = document.createElementNS(NS,'rect');
-    r.setAttribute('x',100-w/2); r.setAttribute('y',100-81); r.setAttribute('width',w); r.setAttribute('height',l);
-    r.setAttribute('transform',`rotate(${i*6} 100 100)`); r.style.fill='var(--mark)';
-    aT.appendChild(r);
-  }
-  const hH=document.getElementById('hH'), hM=document.getElementById('hM'), hS=document.getElementById('hS');
+  /* ---------- アナログ目盛（ver1と同一） ---------- */
+  (function(){
+    const g=document.getElementById('analogTicks'); let svg='';
+    for (let i=0;i<60;i++){
+      const major=i%5===0, w=major?6.1:2.2, h=major?21:6.3, yTop=100-81;
+      svg+='<rect x="'+(100-w/2).toFixed(2)+'" y="'+yTop.toFixed(2)+'" width="'+w+'" height="'+h+'" fill="#e9e9e9"'+
+           (major?'':' fill-opacity=".9"')+' transform="rotate('+(i*6)+' 100 100)"></rect>';
+    }
+    g.innerHTML=svg;
+  })();
+  const handHour=document.getElementById('handHour'), handMinute=document.getElementById('handMinute'), handSecond=document.getElementById('handSecond');
   function paintAnalog(p){
     const h=+p.hour%12, m=+p.minute, s=+p.second;
-    hH.setAttribute('transform',`rotate(${h*30+m*.5+s/120} 100 100)`);
-    hM.setAttribute('transform',`rotate(${m*6+s*.1} 100 100)`);
-    hS.setAttribute('transform',`rotate(${s*6} 100 100)`);
+    handHour.setAttribute('transform','rotate('+((h+m/60)*30).toFixed(2)+' 100 100)');
+    handMinute.setAttribute('transform','rotate('+((m+s/60)*6).toFixed(2)+' 100 100)');
+    handSecond.setAttribute('transform','rotate('+(s*6).toFixed(2)+' 100 100)');
   }
 
   /* ---------- キャプション ---------- */
@@ -312,77 +380,78 @@
     const p = parts(new Date());
     if (+p.second === lastSec) return;
     lastSec = +p.second;
-    put(F.H,p.hour); put(F.M,p.minute); put(F.S,p.second);
+    put(F.H,p.hour); put(F.M,p.minute);
     put(F.Y,p.year); put(F.Mo,p.month); put(F.D,p.day); setFlap(F.W[0],WJ[p.weekday]);
     F.W[0].classList.toggle('sat',p.weekday==='Sat'); F.W[0].classList.toggle('sun',p.weekday==='Sun');
     document.getElementById('era').textContent = `［ 令和${+p.year-2018}年 ］`;
     paintAnalog(p);
-    cap('c1', 'Analog ・ JST');
-    cap('c2', `${p.weekday} ・ Split-Flap Board`);
   }
 
-  /* ---------- ポモドーロ ---------- */
-  const pomo=document.getElementById('pomo'), sector=document.getElementById('sector'),
-        pT=document.getElementById('pTicks'), pN=document.getElementById('pNums'),
-        kPlay=document.getElementById('kPlay'), kPause=document.getElementById('kPause');
-  const R=67.7, rOut=65.4, rt=76;
-  for (let i=0;i<60;i++){
-    const major=i%5===0, rIn=major?56.2:60.2, a=i*6*Math.PI/180;
-    const ln=document.createElementNS(NS,'line');
-    ln.setAttribute('x1',100+rIn*Math.sin(a)); ln.setAttribute('y1',100-rIn*Math.cos(a));
-    ln.setAttribute('x2',100+rOut*Math.sin(a)); ln.setAttribute('y2',100-rOut*Math.cos(a));
-    ln.setAttribute('stroke-width',major?2.6:1); ln.setAttribute('stroke-opacity',major?1:.9);
-    ln.style.stroke='var(--mark)'; pT.appendChild(ln);
-    if (major){
-      const t=document.createElementNS(NS,'text');
-      t.setAttribute('x',100+rt*Math.sin(a)); t.setAttribute('y',100-rt*Math.cos(a));
-      t.textContent=i; pN.appendChild(t);
+  /* ---------- ポモドーロ（ver1と同一の文字盤・操作） ---------- */
+  const dial=document.getElementById('dial'), sector=document.getElementById('sector'),
+        sectorLip=document.getElementById('sectorLip'), ticksG=document.getElementById('ticks'),
+        knob=document.getElementById('knob');
+  const R=67.7;
+  (function buildTicks(){   // 反時計回り（ver1と同じ）
+    let svg='';
+    for (let m=0;m<60;m++){
+      const rad=-m*6*Math.PI/180, major=m%5===0, rOut=65.4, rIn=major?56.2:60.2;
+      const x1=100+rOut*Math.sin(rad), y1=100-rOut*Math.cos(rad), x2=100+rIn*Math.sin(rad), y2=100-rIn*Math.cos(rad);
+      svg+='<line x1="'+x1.toFixed(2)+'" y1="'+y1.toFixed(2)+'" x2="'+x2.toFixed(2)+'" y2="'+y2.toFixed(2)+
+           '" stroke="#e9e9e9" stroke-opacity="'+(major?1:.9)+'" stroke-width="'+(major?2:.8)+'"></line>';
+      if (major){
+        const rt=76, tx=100+rt*Math.sin(rad), ty=100-rt*Math.cos(rad);
+        svg+='<text x="'+tx.toFixed(2)+'" y="'+ty.toFixed(2)+'" fill="#e9e9e9" font-size="13.2" font-weight="700" '+
+             'text-anchor="middle" dominant-baseline="central" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">'+m+'</text>';
+      }
     }
-  }
-  let setMin=25, remain=25*60, running=false, endAt=0, done=false;
+    ticksG.innerHTML=svg;
+  })();
+  let totalSec=25*60, remainSec=totalSec, running=false, endAt=0, dragging=false;
   function drawSector(sec){
-    const frac=Math.min(sec/3600,1);
-    if (frac<=0){ sector.setAttribute('d',''); return; }
-    if (frac>=.9999){ sector.setAttribute('d',`M100,${100-R} A${R},${R} 0 1 1 99.99,${100-R} Z`); return; }
-    const a=frac*2*Math.PI, x=100+R*Math.sin(a), y=100-R*Math.cos(a);
-    sector.setAttribute('d',`M100,100 L100,${100-R} A${R},${R} 0 ${frac>.5?1:0} 1 ${x},${y} Z`);
+    const mins=Math.max(0,Math.min(60,sec/60));
+    if (mins<=0){ sector.setAttribute('d',''); sectorLip.setAttribute('d',''); return; }
+    if (mins>=59.999){
+      sector.setAttribute('d','M100,'+(100-R)+' A'+R+','+R+' 0 1,0 100,'+(100+R)+' A'+R+','+R+' 0 1,0 100,'+(100-R)+' Z');
+      sectorLip.setAttribute('d',''); return;
+    }
+    const a=mins*6*Math.PI/180, x=100-R*Math.sin(a), y=100-R*Math.cos(a);
+    sector.setAttribute('d','M100,100 L100,'+(100-R)+' A'+R+','+R+' 0 '+(mins*6>180?1:0)+',0 '+x.toFixed(2)+','+y.toFixed(2)+' Z');
+    sectorLip.setAttribute('d','M100,100 L'+x.toFixed(2)+','+y.toFixed(2));
   }
-  const mmss = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
-  function paintPomo(){
-    const s=Math.max(0,Math.ceil(remain));
-    drawSector(s);
-    kPlay.style.display=running?'none':''; kPause.style.display=running?'':'none';
-    const st = done?'Done':running?'Focus':(s===setMin*60?'Ready':'Paused');
-    const dot = `<span class="dot ${running||done?'on':''} ${done?'alarm':''}"></span>`;
-    cap('c3', `${dot}Pomodoro ・ <b>${mmss(s)}</b> ・ ${st}`);
+  const mmss=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+  function renderTimer(){
+    const s=Math.max(0,Math.ceil(remainSec)), done=dial.classList.contains('done');
+    cap('c3','<span class="readout'+(running?' run':'')+(done?' done':'')+'">'+mmss(s)+'</span>');
+    drawSector(remainSec);
   }
-  function startTimer(){ if (remain<=0) remain=setMin*60; endAt=Date.now()+remain*1000; running=true; paintPomo(); }
-  function pauseTimer(){ remain=Math.max(0,(endAt-Date.now())/1000); running=false; paintPomo(); }
-  function stopFlash(){ done=false; pomo.classList.remove('done'); remain=setMin*60; paintPomo(); }
+  function stopFlash(){ dial.classList.remove('done'); }
+  function startTimer(){ if (remainSec<=0) remainSec=totalSec; running=true; endAt=Date.now()+remainSec*1000; stopFlash(); renderTimer(); }
+  function pauseTimer(){ remainSec=Math.max(0,(endAt-Date.now())/1000); running=false; renderTimer(); }
   function tickTimer(){
     if (!running) return;
-    remain=(endAt-Date.now())/1000;
-    if (remain<=0){ remain=0; running=false; done=true; pomo.classList.add('done'); }
-    paintPomo();
+    remainSec=(endAt-Date.now())/1000;
+    if (remainSec<=0){ remainSec=0; running=false; dial.classList.add('done'); }
+    renderTimer();
   }
   function minutesFromPoint(ev){
-    const b=pomo.getBoundingClientRect();
-    const x=(ev.clientX-b.left)/b.width*200-100, y=(ev.clientY-b.top)/b.height*200-100;
-    let deg=Math.atan2(x,-y)*180/Math.PI; if (deg<0) deg+=360;
-    return Math.min(60,Math.max(1,Math.round(deg/6)||60));
+    const r=dial.getBoundingClientRect(), dx=ev.clientX-(r.left+r.width/2), dy=ev.clientY-(r.top+r.height/2);
+    let deg=Math.atan2(-dx,-dy)*180/Math.PI; if (deg<0) deg+=360;   // 反時計回り
+    let mins=Math.round(deg/6); if (mins<=0) mins=60; return Math.min(60,mins);
   }
-  function setFromPoint(ev){ setMin=minutesFromPoint(ev); running=false; remain=setMin*60; paintPomo(); }
-  let dragging=false;
-  pomo.addEventListener('pointerdown',ev=>{
-    if (done){ stopFlash(); return; }
-    if (ev.target.closest('#knob')) return;
-    dragging=true; pomo.setPointerCapture(ev.pointerId); setFromPoint(ev);
+  function setFromPoint(ev){ totalSec=minutesFromPoint(ev)*60; remainSec=totalSec; running=false; stopFlash(); renderTimer(); }
+  knob.addEventListener('pointerdown',ev=>{
+    ev.stopPropagation(); ev.preventDefault();
+    if (dial.classList.contains('done')){ stopFlash(); remainSec=totalSec; renderTimer(); return; }
+    running?pauseTimer():startTimer();
   });
-  pomo.addEventListener('pointermove',ev=>{ if(dragging) setFromPoint(ev); });
-  pomo.addEventListener('pointerup',()=>{ dragging=false; });
-  document.getElementById('knob').addEventListener('click',ev=>{
-    ev.stopPropagation(); if (done) return; running?pauseTimer():startTimer();
+  dial.addEventListener('pointerdown',ev=>{
+    if (dial.classList.contains('done')){ stopFlash(); remainSec=totalSec; renderTimer(); return; }
+    dragging=true; dial.setPointerCapture&&dial.setPointerCapture(ev.pointerId); setFromPoint(ev);
   });
+  dial.addEventListener('pointermove',ev=>{ if(dragging) setFromPoint(ev); });
+  dial.addEventListener('pointerup',()=>{ dragging=false; });
+  dial.addEventListener('pointercancel',()=>{ dragging=false; });
 
   /* ---------- ラベルの中心をコロンに合わせる ---------- */
   const tzLabel=document.getElementById('tzLabel'), colon=document.getElementById('colon'), face=document.querySelector('.flipface');
@@ -393,7 +462,7 @@
   new ResizeObserver(alignLabel).observe(face);
   if (document.fonts) document.fonts.ready.then(alignLabel);
 
-  tickClock(); paintPomo(); alignLabel();
+  tickClock(); renderTimer(); alignLabel();
   setInterval(()=>{ tickClock(); tickTimer(); }, 200);
 })();
 </script>
