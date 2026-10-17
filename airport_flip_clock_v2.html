@@ -121,21 +121,6 @@
   .datebox{display:flex;flex-direction:column;align-items:center;gap:calc(var(--u)*.7)}
   .era{font-size:calc(var(--u)*1.05);letter-spacing:.2em;color:var(--muted);margin-right:-.2em}
 
-  /* ===== キャプション（3つ共通の書式） ===== */
-  .caps{display:flex;justify-content:center;margin-top:calc(var(--u)*1.2)}
-  .cap{font-size:calc(var(--u)*1.05);letter-spacing:.34em;font-weight:600;color:var(--muted);
-       text-transform:uppercase;text-align:center;display:flex;justify-content:center;align-items:center;gap:.7em}
-  .cap.c1,.cap.c3{width:calc(var(--u)*25)}
-  .cap.c2{width:calc(var(--u)*43);margin:0 calc(var(--u)*1.5)}
-  .cap b{color:var(--text);font-weight:700;letter-spacing:.12em;font-variant-numeric:tabular-nums}
-  .readout{font-size:calc(var(--u)*3.9);font-weight:700;letter-spacing:-.01em;color:var(--text);
-           font-variant-numeric:tabular-nums;text-transform:none}
-  .readout.run{color:#CB5C5C}
-  .readout.done{animation:goldPulse 2.8s ease-in-out infinite}
-  .cap .dot{width:calc(var(--u)*.7);height:calc(var(--u)*.7);border-radius:50%;background:#555;display:inline-block}
-  .cap .dot.on{background:radial-gradient(circle at 35% 35%,var(--gold-hi),var(--gold));
-               box-shadow:0 0 calc(var(--u)*.8) rgba(201,162,74,.7)}
-  .cap .dot.alarm{animation:goldPulse 2.8s ease-in-out infinite}
 
   /* ===== ポモドーロ ===== */
   @keyframes slowBlink{0%,100%{opacity:1}50%{opacity:.25}}
@@ -147,12 +132,9 @@
     .row{flex-direction:column}
     .bridge{width:calc(var(--u)*3.4);height:calc(var(--u)*2.2);margin:calc(var(--u)*-.35) 0}
     .bridge::after{left:50%;right:auto;top:0;bottom:0;height:auto;width:calc(var(--u)*.28);transform:translateX(-50%)}
-    .caps{display:none}
-    .row #m3{display:flex}
   }
-  .mcap{display:none;margin:calc(var(--u)*.9) 0 calc(var(--u)*.4)}
   @media (prefers-reduced-motion:reduce){
-    .colon span,.readout.done,.dial.done{animation:none}
+    .colon span,#knobGlow.on,.dial.done{animation:none}
   }
 
   /* ===== ver1と同じ陰影（文字盤360px基準の値を u に換算） ===== */
@@ -163,6 +145,9 @@
   .dial.done{animation:dialFlash 1.167s steps(1,end) infinite}
   @keyframes dialFlash{0%,49%{opacity:1}50%,100%{opacity:.18}}
   #knob{cursor:pointer}
+  #knobGlow{opacity:0;transition:opacity .3s}
+  #knobGlow.on{opacity:1;filter:drop-shadow(0 0 3px rgba(255,215,104,.72)) drop-shadow(0 0 .5px rgba(255,246,190,.95));
+               animation:slowBlink 3.033s ease-in-out infinite}  /* 「：」と同じ色・テンポ */
   body.inv #analogBezel stop:nth-child(1),body.inv #dialBezel stop:nth-child(1){stop-color:#b5b5b5}
   body.inv #analogBezel stop:nth-child(2),body.inv #dialBezel stop:nth-child(2){stop-color:#e5e5e5}
   body.inv #analogBezel stop:nth-child(3),body.inv #dialBezel stop:nth-child(3){stop-color:#c5c5c5}
@@ -225,7 +210,6 @@
           </g>
         </svg>
     </div>
-    <div class="mcap cap" id="m1"></div>
 
     <div class="bridge"></div>
 
@@ -249,7 +233,6 @@
         </div>
       </div>
     </div>
-    <div class="mcap cap" id="m2"></div>
 
     <div class="bridge"></div>
 
@@ -291,6 +274,9 @@
               <stop offset="62%" stop-color="#272727"></stop>
               <stop offset="100%" stop-color="#1e1e1e"></stop>
             </radialGradient>
+            <radialGradient id="knobGold" cx="35%" cy="28%" r="75%">
+              <stop offset="0%" stop-color="#fff1a8"></stop><stop offset="42%" stop-color="#d4af37"></stop><stop offset="100%" stop-color="#8f6b18"></stop>
+            </radialGradient>
             <filter id="knobShadow" x="-80%" y="-80%" width="260%" height="260%">
               <feDropShadow dx="0" dy="2.6" stdDeviation="2.2" flood-color="#000000" flood-opacity=".55"></feDropShadow>
             </filter>
@@ -303,17 +289,12 @@
           <g filter="url(#knobShadow)">
             <circle id="knobHalo" cx="100" cy="100" r="12" fill="#d8d8d8" opacity=".35"></circle>
             <circle id="knob" cx="100" cy="100" r="11" fill="url(#knobFill)" stroke="#000000" stroke-width=".6"></circle>
+            <circle id="knobGlow" cx="100" cy="100" r="11" fill="url(#knobGold)" pointer-events="none"></circle>
           </g>
         </svg>
     </div>
-    <div class="mcap cap" id="m3"></div>
   </div>
 
-  <div class="caps">
-    <div class="cap c1" id="c1"></div>
-    <div class="cap c2" id="c2"></div>
-    <div class="cap c3" id="c3"></div>
-  </div>
  </div>
 </div>
 
@@ -373,7 +354,6 @@
   }
 
   /* ---------- キャプション ---------- */
-  const cap = (id, html) => { const a=document.getElementById(id), b=document.getElementById('m'+id.slice(1)); a.innerHTML=html; b.innerHTML=html; };
 
   let lastSec = -1;
   function tickClock(){
@@ -390,7 +370,7 @@
   /* ---------- ポモドーロ（ver1と同一の文字盤・操作） ---------- */
   const dial=document.getElementById('dial'), sector=document.getElementById('sector'),
         sectorLip=document.getElementById('sectorLip'), ticksG=document.getElementById('ticks'),
-        knob=document.getElementById('knob');
+        knob=document.getElementById('knob'), knobGlow=document.getElementById('knobGlow');
   const R=67.7;
   (function buildTicks(){   // 反時計回り（ver1と同じ）
     let svg='';
@@ -419,10 +399,8 @@
     sector.setAttribute('d','M100,100 L100,'+(100-R)+' A'+R+','+R+' 0 '+(mins*6>180?1:0)+',0 '+x.toFixed(2)+','+y.toFixed(2)+' Z');
     sectorLip.setAttribute('d','M100,100 L'+x.toFixed(2)+','+y.toFixed(2));
   }
-  const mmss=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
   function renderTimer(){
-    const s=Math.max(0,Math.ceil(remainSec)), done=dial.classList.contains('done');
-    cap('c3','<span class="readout'+(running?' run':'')+(done?' done':'')+'">'+mmss(s)+'</span>');
+    knobGlow.classList.toggle('on',running);   // 稼働中は黒丸を金色で点滅
     drawSector(remainSec);
   }
   function stopFlash(){ dial.classList.remove('done'); }
