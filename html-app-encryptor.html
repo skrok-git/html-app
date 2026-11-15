@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" href="data:," />
-    <title>html-app 暗号化ツール（ブラウザ用）</title>
+    <title>html-app 暗号化ツール（ローカル専用）</title>
     <style>
       body { font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif; background: #edf0f3; color: #1c2733; margin: 0; padding: 32px 16px; }
       .card { max-width: 640px; margin: 0 auto; background: #fff; border: 1px solid #d8dfe7; border-radius: 14px; padding: 24px 26px 28px; }
@@ -22,10 +22,9 @@
   </head>
   <body>
     <div class="card">
-      <h1>🔐 html-app 暗号化ツール（ブラウザ用）</h1>
-      <p class="note">DB_.html-app の共通ルール用。平文のアプリHTMLを、既存方式（AES-256-GCM ＋ PBKDF2-SHA256／600,000回）のラッパーで暗号化し、配信用HTMLをダウンロードします。このページ自体は通信を一切しません。パスワードはブラウザの中だけで使われ、保存も送信もされません。暗号化が終わるとパスワード欄は自動で消えます。</p>
+      <h1>🔐 html-app 暗号化ツール</h1>
+      <p class="note">DB_.html-app の共通ルール用。平文のアプリHTMLを、既存方式（AES-256-GCM ＋ PBKDF2-SHA256／600,000回）のラッパーで暗号化し、配信用HTMLをダウンロードします。このページは通信を一切しません。パスワードはこのPCの中だけで使われ、保存も送信もされません。</p>
 
-      <form id="encForm" autocomplete="on">
       <label for="fileInput">1. 平文のアプリHTMLファイル</label>
       <input type="file" id="fileInput" accept=".html,.htm,text/html" />
 
@@ -35,14 +34,10 @@
       <label for="appTitle">3. アプリ名（解除画面のタイトル）</label>
       <input type="text" id="appTitle" placeholder="タスク分解 v0.3" />
 
-      <label for="uname">4. ユーザー名</label>
-      <input type="text" id="uname" name="username" autocomplete="username" value="html-app" />
+      <label for="pw1">4. 共通パスワード</label>
+      <input type="password" id="pw1" autocomplete="current-password" />
 
-      <label for="pw1">5. 共通パスワード</label>
-      <input type="password" id="pw1" name="password" autocomplete="current-password" />
-
-      <button id="go" type="submit" disabled>暗号化してダウンロード</button>
-      </form>
+      <button id="go" disabled>暗号化してダウンロード</button>
       <div id="status"></div>
     </div>
 
@@ -75,8 +70,7 @@
         r.readAsText(f);
       });
 
-      document.getElementById("encForm").addEventListener("submit", async function (ev) {
-        ev.preventDefault();
+      go.addEventListener("click", async function () {
         statusEl.textContent = ""; go.disabled = true;
         try {
           if (!crypto || !crypto.subtle) { statusEl.innerHTML = '<span class="err">このブラウザでは WebCrypto が使えません（https か file:// で開いてください）。</span>'; go.disabled = false; return; }
@@ -100,7 +94,7 @@
           document.body.appendChild(a); a.click(); a.remove();
           setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
           pw1.value = "";
-          statusEl.innerHTML = '<span class="ok">完了：' + esc(a.download) + ' をダウンロードしました。</span> 復号の自己確認も一致しています。パスワード欄は自動で消去しました。';
+          statusEl.innerHTML = '<span class="ok">完了：' + esc(a.download) + ' をダウンロードしました。</span> 復号の自己確認も一致しています。このファイルを GitHub へアップロードしてください。';
         } catch (e) {
           statusEl.innerHTML = '<span class="err">失敗しました：' + esc(String(e && e.message || e)) + '</span>';
         }
